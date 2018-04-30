@@ -1,3 +1,6 @@
+#define _USE_MATH_DEFINES // for C++  
+#include <cmath>  
+
 #include <libxml/parser.h>
 #include <libxml/xmlschemas.h>
 #include <libxml/xmlmemory.h>
@@ -38,6 +41,8 @@ using boost::locale::conv::utf_to_utf;
 #include <streambuf>
 #include <utility>
 #include <typeinfo>
+
+
 
 const size_t MYSTERY_BYTES_EXPECTED = 160;
 
@@ -82,7 +87,7 @@ std::vector<MeasurementHeaderBuffer> readMeasurementHeaderBuffers(std::ifstream 
 std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_content, uint32_t num_buffers,
                           std::vector<MeasurementHeaderBuffer> &buffers, std::vector<std::string> &wip_double,
                           Trajectory &trajectory, long &dwell_time_0, long &max_channels, long &radial_views,
-                          std::string &baseLineString, std::string &protocol_name);
+                          std::string &baseLineString, std::string &protocol_name, long &gyromagneticRatio_Hz_Per_Tesla, double &dReadoutOversampling);
 
 std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, std::string &schema_file_name_content,
                      const std::string xml_config);
@@ -93,9 +98,10 @@ ISMRMRD::NDArray<float>
 
 
 ISMRMRD::Acquisition
-        getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, long max_channels,
-                       bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB, ISMRMRD::NDArray<float> &traj,
-                       const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels);
+        getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, long gyromagneticRatio_Hz_Per_Tesla, double dReadoutOversampling, long max_channels,
+                       bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB, bool &ignore_Segments, ISMRMRD::NDArray<float> &traj,
+                       const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels,
+					   ISMRMRD::IsmrmrdHeader header);
 
 void readScanHeader(std::ifstream &siemens_dat, bool VBFILE, sMDH &mdh, sScanHeader &scanhead);
 
@@ -216,8 +222,8 @@ bool fill_ismrmrd_header(ISMRMRD::IsmrmrdHeader& h, const std::string& study_dat
         // fill more info into the ismrmrd header
         // ---------------------------------
         // study
-        bool study_date_needed = false;
-        bool study_time_needed = false;
+        bool study_date_needed = !study_date.empty();
+        bool study_time_needed = !study_time.empty();
 
         if ( h.studyInformation )
         {
@@ -259,7 +265,6 @@ bool fill_ismrmrd_header(ISMRMRD::IsmrmrdHeader& h, const std::string& study_dat
         // ---------------------------------
         // go back to string
         // ---------------------------------
-
 
     }
     catch(...)
@@ -471,6 +476,7 @@ int main(int argc, char *argv[] )
     bool flash_pat_ref_scan = false;
     bool header_only = false;
     bool append_buffers = false;
+	bool ignore_Segments = true;
 
     bool list = false;
     std::string to_extract;
@@ -496,6 +502,7 @@ int main(int argc, char *argv[] )
             ("headerOnly,H",            po::value<bool>(&header_only)->implicit_value(true), "<HEADER ONLY flag (create xml header only)>")
             ("bufferAppend,B",          po::value<bool>(&append_buffers)->implicit_value(true), "<Append Siemens protocol buffers (bas64) to user parameters>")
             ("studyDate",               po::value<std::string>(&study_date_user_supplied), "<User can supply study date, in the format of yyyy-mm-dd>")
+			("ignoreSegments,i", po::value<bool>(&ignore_Segments)->implicit_value(true), "<Ignore segments>")
             ;
 
     po::options_description display_options("Allowed options");
@@ -517,6 +524,7 @@ int main(int argc, char *argv[] )
             ("headerOnly,H",            "<HEADER ONLY flag (create xml header only)>")
             ("bufferAppend,B",          "<Append protocol buffers>")
             ("studyDate",               "<User can supply study date, in the format of yyyy-mm-dd>")
+			("ignoreSegments,i", "<Ignore segments>")
             ;
 
     po::variables_map vm;
@@ -711,10 +719,12 @@ int main(int argc, char *argv[] )
     long dwell_time_0;
     long max_channels;
     long radial_views;
+	long gyromagneticRatio_Hz_Per_Tesla;
+	double dReadoutOversampling;
     std::string baseLineString;
     std::string protocol_name;
     std::string xml_config = readXmlConfig(debug_xml, parammap_file_content, num_buffers, buffers, wip_double, trajectory, dwell_time_0,
-                                           max_channels, radial_views, baseLineString, protocol_name);
+                                           max_channels, radial_views, baseLineString, protocol_name, gyromagneticRatio_Hz_Per_Tesla, dReadoutOversampling);
 
     // whether this scan is a adjustment scan
     bool isAdjustCoilSens = false;
@@ -809,9 +819,13 @@ int main(int argc, char *argv[] )
             size_t hours = (size_t)(timeInSeconds/3600);
             size_t mins =  (size_t)((timeInSeconds - hours*3600) / 60);
             size_t secs =  (size_t)(timeInSeconds- hours*3600 - mins*60);
-
+			
             std::string study_time = get_time_string(hours, mins, secs);
 
+			if (study_date_user_supplied.empty()) {
+				study_date_user_supplied = header.studyInformation.get().studyDate.get();
+			}
+			
             // if some of the ismrmrd header fields are not filled, here is a place to take some further actions
             if(!fill_ismrmrd_header(header, study_date_user_supplied, study_time) )
             {
@@ -876,8 +890,8 @@ int main(int argc, char *argv[] )
             break;
         }
 
-        ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, max_channels, isAdjustCoilSens,
-                                                          isAdjQuietCoilSens, isVB, traj, scanhead, channels));
+        ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, gyromagneticRatio_Hz_Per_Tesla, dReadoutOversampling, max_channels, isAdjustCoilSens,
+                                                          isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header));
 
     }//End of the while loop
 
@@ -1007,9 +1021,10 @@ void readScanHeader(std::ifstream &siemens_dat, bool VBFILE, sMDH &mdh, sScanHea
 }
 
 ISMRMRD::Acquisition
-getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, long max_channels,
-               bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB, ISMRMRD::NDArray<float> &traj,
-               const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels) {
+getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, long gyromagneticRatio_Hz_Per_Tesla, double dReadoutOversampling, long max_channels,
+               bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB,  bool &ignore_Segments, ISMRMRD::NDArray<float> &traj,
+               const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels,
+			   ISMRMRD::IsmrmrdHeader header) {
     ISMRMRD::Acquisition ismrmrd_acq;
     // The number of samples, channels and trajectory dimensions is set below
 
@@ -1036,9 +1051,9 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
     }
     // std::cout << "ismrmrd_acq.sample_time_us(): " << ismrmrd_acq.sample_time_us() << std::endl;
 
-    ismrmrd_acq.position()[0] = scanhead.sSliceData.sSlicePosVec.flSag;
-    ismrmrd_acq.position()[1] = scanhead.sSliceData.sSlicePosVec.flCor;
-    ismrmrd_acq.position()[2] = scanhead.sSliceData.sSlicePosVec.flTra;
+    ismrmrd_acq.position()[0] = scanhead.sSliceData.sSlicePosVec.flSag*1e-3f;
+    ismrmrd_acq.position()[1] = scanhead.sSliceData.sSlicePosVec.flCor*1e-3f;
+    ismrmrd_acq.position()[2] = scanhead.sSliceData.sSlicePosVec.flTra*1e-3f;
 
     // Convert Siemens quaternions to direction cosines.
     // In the Siemens convention the quaternion corresponds to a rotation matrix with columns P R S
@@ -1048,10 +1063,13 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
     quat[1] = scanhead.sSliceData.aflQuaternion[2]; // Y
     quat[2] = scanhead.sSliceData.aflQuaternion[3]; // Z
     quat[3] = scanhead.sSliceData.aflQuaternion[0]; // W
-    ISMRMRD::ismrmrd_quaternion_to_directions(quat,
-                                              ismrmrd_acq.phase_dir(),
-                                              ismrmrd_acq.read_dir(),
-                                              ismrmrd_acq.slice_dir());
+
+	// Set directions in magnet/physical coordinate system
+    ISMRMRD::ismrmrd_quaternion_to_directions_XYZ(quat, header.measurementInformation->patientPosition.c_str(),
+												  ismrmrd_acq.phase_dir(),
+												  ismrmrd_acq.read_dir(),
+												  ismrmrd_acq.slice_dir());
+
 
     //std::cout << "scanhead.ulScanCounter         = " << scanhead.ulScanCounter << std::endl;
     //std::cout << "quat         = [" << quat[0] << " " << quat[1] << " " << quat[2] << " " << quat[3] << "]" << std::endl;
@@ -1077,7 +1095,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
     ismrmrd_acq.idx().kspace_encode_step_2 = scanhead.sLC.ushPartition;
     ismrmrd_acq.idx().phase                = scanhead.sLC.ushPhase;
     ismrmrd_acq.idx().repetition           = scanhead.sLC.ushRepetition;
-    ismrmrd_acq.idx().segment              = scanhead.sLC.ushSeg;
+    ismrmrd_acq.idx().segment              = ignore_Segments ? 0 : scanhead.sLC.ushSeg;
     ismrmrd_acq.idx().set                  = scanhead.sLC.ushSet;
     ismrmrd_acq.idx().slice                = scanhead.sLC.ushSlice;
     ismrmrd_acq.idx().user[0]            = scanhead.sLC.ushIda;
@@ -1086,8 +1104,8 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
     ismrmrd_acq.idx().user[3]            = scanhead.sLC.ushIdd;
     ismrmrd_acq.idx().user[4]            = scanhead.sLC.ushIde;
     // TODO: remove this once the GTPlus can properly autodetect partial fourier
-    ismrmrd_acq.idx().user[5]            = scanhead.ushKSpaceCentreLineNo;
-    ismrmrd_acq.idx().user[6]            = scanhead.ushKSpaceCentrePartitionNo;
+    //ismrmrd_acq.idx().user[5]            = scanhead.ushKSpaceCentreLineNo;
+    //ismrmrd_acq.idx().user[6]            = scanhead.ushKSpaceCentrePartitionNo;
 
     /*****************************************************************************/
     /* the user_int[0] and user_int[1] are used to store user defined parameters */
@@ -1130,12 +1148,17 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 24)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_REVERSE);
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 11)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_LAST_IN_MEASUREMENT);
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 21)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_PHASECORR_DATA);
-    if ((scanhead.aulEvalInfoMask[0] & (1ULL << 1)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_NAVIGATION_DATA);
-    if ((scanhead.aulEvalInfoMask[0] & (1ULL << 1)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_RTFEEDBACK_DATA);
+    //if ((scanhead.aulEvalInfoMask[0] & (1ULL << 1)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_NAVIGATION_DATA);
+    //if ((scanhead.aulEvalInfoMask[0] & (1ULL << 1)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_RTFEEDBACK_DATA);
+
+	if ((scanhead.aulEvalInfoMask[0] & (1ULL << 1)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_USER1); // Skope - Reinterprete RTFEEDBACK_DATA as Sync scan flag
+	if ((scanhead.aulEvalInfoMask[1] == 524288))		ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_USER1); // Skope - Reinterprete RTFEEDBACK_DATA as Sync scan flag
+	if ((scanhead.aulEvalInfoMask[0] & (1ULL << 51)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_USER1); // Skope - Reinterprete RTFEEDBACK_DATA as Sync scan flag
+
+
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 2)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_HPFEEDBACK_DATA);
-    if ((scanhead.aulEvalInfoMask[0] & (1ULL << 51)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_DUMMYSCAN_DATA);
-    if ((scanhead.aulEvalInfoMask[0] & (1ULL << 10)))   ismrmrd_acq.setFlag(
-                ISMRMRD::ISMRMRD_ACQ_IS_SURFACECOILCORRECTIONSCAN_DATA);
+    //if ((scanhead.aulEvalInfoMask[0] & (1ULL << 51)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_DUMMYSCAN_DATA);
+    if ((scanhead.aulEvalInfoMask[0] & (1ULL << 10)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_SURFACECOILCORRECTIONSCAN_DATA);
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 5)))    ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_DUMMYSCAN_DATA);
     // if ((scanhead.aulEvalInfoMask[0] & (1ULL << 1))) ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_LAST_IN_REPETITION);
 
@@ -1150,45 +1173,142 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
         ismrmrd_acq.encoding_space_ref() = 1;
     }
 
-    if ((trajectory == Trajectory::TRAJECTORY_SPIRAL) & !(ismrmrd_acq.isFlagSet(
-            ISMRMRD::ISMRMRD_ACQ_IS_NOISE_MEASUREMENT)) )
-    { //Spiral and not noise, we will add the trajectory to the data
+     //No trajectory
+     // Set the acquisition number of samples, channels and trajectory dimensions
+     // this reallocates the memory
+     ismrmrd_acq.resize(scanhead.ushSamplesInScan, scanhead.ushUsedChannels);
+    
+	 
+	 // Compute slice shift in PRS coordinate system 
+	 // Positions are still in SAG/COR/TRA coordinate system
+	 float sliceShift_prs[3];
+	 ISMRMRD::ismrmrd_transform_SCT_PRS(quat, ismrmrd_acq.position(), sliceShift_prs);
 
-        // from above we have the following
-        // traj_dim[0] = dimensionality (2)
-        // traj_dim[1] = ngrad i.e. points per interleaf
-        // traj_dim[2] = no. of interleaves
-        // and
-        // traj.getData() is a float * pointer to the trajectory stored
-        // kspace_encode_step_1 is the interleaf number
+	 // Determine position in magnet coordinate system
+	 ISMRMRD::ismrmrd_transform_SCT_XYZ(header.measurementInformation->patientPosition.c_str(), ismrmrd_acq.position(), ismrmrd_acq.position());
 
-        // Set the acquisition number of samples, channels and trajectory dimensions
-        // this reallocates the memory
-        auto traj_dim = traj.getDims();
-        ismrmrd_acq.resize(scanhead.ushSamplesInScan,
-                           scanhead.ushUsedChannels,
-                           traj_dim[0]);
+	 float fovRead_recon_mm = header.encoding[0].reconSpace.fieldOfView_mm.x;
+	 float fovPhase_recon_mm = header.encoding[0].reconSpace.fieldOfView_mm.y;
+	 double dAmplRO = 0.0;
+	 double dADCDuration = (double)dwell_time_0 / 1000.0 * header.encoding[0].encodedSpace.matrixSize.x;
+	 double dMomentRO = (double)header.encoding[0].encodedSpace.matrixSize.x / dReadoutOversampling / (fovRead_recon_mm*gyromagneticRatio_Hz_Per_Tesla)*1.0e12;
 
-        unsigned long traj_samples_to_copy = ismrmrd_acq.number_of_samples();
-        if (traj_dim[1] < traj_samples_to_copy)
-        {
-            traj_samples_to_copy = (unsigned long)traj_dim[1];
-            ismrmrd_acq.discard_post() = (uint16_t)(ismrmrd_acq.number_of_samples()-traj_samples_to_copy);
-        }
-        float* t_ptr = &traj.getDataPtr()[ traj_dim[0] * traj_dim[1] * ismrmrd_acq.idx().kspace_encode_step_1 ];
-        memcpy((void*)ismrmrd_acq.getTrajPtr(), t_ptr, sizeof(float) * traj_dim[0] * traj_samples_to_copy);
-    }
-    else
-    { //No trajectory
-        // Set the acquisition number of samples, channels and trajectory dimensions
-        // this reallocates the memory
-        ismrmrd_acq.resize(scanhead.ushSamplesInScan, scanhead.ushUsedChannels);
-    }
 
+
+
+	
+	 if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
+	 
+		long lRegridRampupTime = 0;
+		long lRegridFlattopTime = 0;
+		long lRegridRampdownTime = 0;
+		long lRegridDelaySamplesTime = 0;
+
+		ISMRMRD::TrajectoryDescription trajDes = header.encoding.at(0).trajectoryDescription.get();
+
+		
+		for (int cParam = 0; cParam < trajDes.userParameterLong.size(); cParam++) {
+
+			std::string name = trajDes.userParameterLong.at(cParam).name;
+			long value = trajDes.userParameterLong.at(cParam).value;
+
+			if (name.compare("rampUpTime") == 0) {
+				lRegridRampupTime = value;
+			}
+			else if (name.compare("rampDownTime") == 0) {
+				lRegridRampdownTime = value;
+			}
+			else if (name.compare("flatTopTime") == 0) {
+				lRegridFlattopTime = value;
+			}
+			else if (name.compare("acqDelayTime") == 0) {
+				lRegridDelaySamplesTime = value;
+			}
+		}
+
+		long GROTotalTime = lRegridRampupTime + lRegridFlattopTime + lRegridRampdownTime;
+		long lDuraRO = lRegridRampupTime + lRegridFlattopTime;
+		double dDeltaRU = (double)std::min(lRegridDelaySamplesTime, lRegridRampupTime);
+		double dDeltaRD = std::min((double)GROTotalTime - (lRegridDelaySamplesTime + dADCDuration), (double)lRegridRampupTime);
+		double dDeltaF1 = std::max((double)lRegridDelaySamplesTime - lRegridRampupTime, 0.0);
+		double dDeltaF2 = std::max((double)lDuraRO - (lRegridDelaySamplesTime + dADCDuration), 0.0);
+
+		double dFactor = (double)lDuraRO - dDeltaF1 - dDeltaF2
+			- 0.5*(dDeltaRU*dDeltaRU + dDeltaRD * dDeltaRD) / (double)lRegridRampupTime;
+
+		dAmplRO = dMomentRO / dFactor;
+
+	 }
+	 else {
+		dAmplRO = dMomentRO / dADCDuration;
+
+	 }
+	 
+	 // Frequency and phase of ADC
+	 float fFrequency = ((float)(gyromagneticRatio_Hz_Per_Tesla)*sliceShift_prs[1] * dAmplRO*1.0e-3 + 0.5); // in Hz
+	 float fPhase = -fFrequency * 360.0*1.0e-6*dADCDuration*scanhead.ushKSpaceCentreColumn / scanhead.ushSamplesInScan; // in deg
+	 float fdeltaPE = 360.0 / fovPhase_recon_mm * sliceShift_prs[0] * 1000;
+	 
+	 long lLinNoCenterZero = ismrmrd_acq.idx().kspace_encode_step_1 - scanhead.ushKSpaceCentreLineNo;
+	 long lParNoCenterZero = ismrmrd_acq.idx().kspace_encode_step_2 - scanhead.ushKSpaceCentrePartitionNo;
+
+
+	 // Clock-shift correction
+	 double ReadoutOSFactor = 2;
+	 double dLinDelay = -0.5;
+	 double dConstDelay = -2.0e-6;
+	 double dTos_us = 1.e-3 * dwell_time_0 / ReadoutOSFactor; // ns -> us
+	 double dClockFreq_Hz = fFrequency;
+	 double dClockShiftCorrPhase = dClockFreq_Hz * (dLinDelay * 1e-6 * dTos_us + dConstDelay) * 360.0;
+	 fPhase -= dClockShiftCorrPhase;
+
+	
     for (unsigned int c = 0; c < ismrmrd_acq.active_channels(); c++)
     {
         memcpy((complex_float_t *)&(ismrmrd_acq.getDataPtr()[c*ismrmrd_acq.number_of_samples()]),
                &channels[c].data[0], ismrmrd_acq.number_of_samples()*sizeof(complex_float_t));
+
+
+		complex_float_t* data = (complex_float_t *)&ismrmrd_acq.getDataPtr()[c*ismrmrd_acq.number_of_samples()];
+
+
+		// Undo FoV shifts
+		if (ismrmrd_acq.isFlagSet(ISMRMRD::ISMRMRD_ACQ_IS_REVERSE)) {
+
+			float phi_p_inc = -fPhase + fdeltaPE * lLinNoCenterZero;
+
+
+			for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {
+
+				float phi = phi_p_inc - 360.0*fFrequency*dwell_time_0*1.0e-9*float(s);
+
+				phi = phi * M_PI / 180.0;
+
+				// No FoV shifts are applied by the scanner for spirals. No need to undo them.
+				if (header.encoding.at(0).trajectory != ISMRMRD::TrajectoryType::SPIRAL) {
+					data[s] *= std::polar(1.0f, phi);
+				}
+			}
+		}
+		else {
+			float phi_p_inc = fPhase + fdeltaPE * lLinNoCenterZero;
+			//if (c == 0)
+			//	std::cout << " phi_p_inc normal : " << phi_p_inc;
+
+			for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {
+
+				float phi = phi_p_inc + 360.0*fFrequency*dwell_time_0*1.0e-9*float(s);
+
+				phi = phi * M_PI / 180.0;
+
+				// No FoV shifts are applied by the scanner for spirals. No need to undo them.
+				if (header.encoding.at(0).trajectory != ISMRMRD::TrajectoryType::SPIRAL) {
+					data[s] *= std::polar(1.0f, phi);
+				}
+			}
+		}
+		// Undo B0 eddy current correction
+		//dsp.applyPhaseModulation(data, ismrmrd_acq.number_of_samples(), scanhead.ulScanCounter - 1); // ulScanCounter starts at 1.
     }
 
 
@@ -1576,7 +1696,7 @@ std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, st
 std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_content, uint32_t num_buffers,
                           std::vector<MeasurementHeaderBuffer> &buffers, std::vector<std::string> &wip_double,
                           Trajectory &trajectory, long &dwell_time_0, long &max_channels, long &radial_views,
-                          std::string &baseLineString, std::string &protocol_name) {
+                          std::string &baseLineString, std::string &protocol_name, long &gyromagneticRatio_Hz_Per_Tesla, double &dReadoutOversampling) {
     dwell_time_0= 0;
     max_channels= 0;
     radial_views= 0;
@@ -1609,6 +1729,43 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
                 throw std::runtime_error(sstream.str());
 
             }
+
+			//Get some parameters - lLarmorConstant
+			{
+				const XProtocol::XNode* n2 = boost::apply_visitor(XProtocol::getChildNodeByName("YAPS.alLarmorConstant"), n);
+				std::vector<std::string> temp;
+				if (n2)
+				{
+					temp = boost::apply_visitor(XProtocol::getStringValueArray(), *n2);
+				}
+				else
+				{
+					std::cout << "Search path: YAPS.alLarmorConstant not found." << std::endl;
+				}
+				if (temp.size() == 0)
+				{
+					std::cerr << "Failed to find LarmorConstant" << std::endl;
+					return false;
+				}
+				else
+				{
+					gyromagneticRatio_Hz_Per_Tesla = std::atoi(temp[0].c_str());
+				}
+			}
+
+			//Get readout oversampling - Skope
+			{
+				const XProtocol::XNode* n2 = boost::apply_visitor(XProtocol::getChildNodeByName("YAPS.flReadoutOSFactor"), n);
+				std::vector<std::string> temp;
+				if (n2)
+				{
+					temp = boost::apply_visitor(XProtocol::getStringValueArray(), *n2);
+				}
+				if (temp.size() > 0)
+				{
+					dReadoutOversampling = std::atof(temp[0].c_str());
+				}
+			}
 
             //Get some parameters - wip long
             {
