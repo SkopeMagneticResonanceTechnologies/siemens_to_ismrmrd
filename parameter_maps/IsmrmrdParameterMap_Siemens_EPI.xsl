@@ -177,6 +177,9 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                 <H1resonanceFrequency_Hz>
                     <xsl:value-of select="siemens/DICOM/lFrequency"/>
                 </H1resonanceFrequency_Hz>
+				<LarmorConstant_Hz_Per_T>
+                    <xsl:value-of select="siemens/YAPS/alLarmorConstant"/>
+                </LarmorConstant_Hz_Per_T>
             </experimentalConditions>
 
             <encoding>

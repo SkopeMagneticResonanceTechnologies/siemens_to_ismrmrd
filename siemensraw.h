@@ -17,7 +17,35 @@
 #define MDH_DMA_LENGTH_MASK   (0x01FFFFFFL)
 #define MDH_PACK_BIT_MASK     (0x02000000L)
 #define MDH_ENABLE_FLAGS_MASK (0xFC000000L)
-#define MDH_SYNCDATA (0x00000020L)
+
+#define MDH_ACQEND				(1)
+#define MDH_RTFEEDBACK			(1 << 1)
+#define MDH_HPFEEDBACK			(1 << 2)
+#define MDH_ONLINE				(1 << 3)
+#define MDH_OFFLINE				(1 << 4)
+#define MDH_SYNCDATA			(1 << 5)       // readout contains synchronous data
+#define MDH_LASTSCANINCONCAT	(1 << 8)       // Flag for last scan in concatenation
+
+#define MDH_RAWDATACORRECTION	(1 << 10)      // Correct the rawdata with the rawdata correction factor
+#define MDH_LASTSCANINMEAS		(1 << 11)      // Flag for last scan in measurement
+#define MDH_SCANSCALEFACTOR		(1 << 12)      // Flag for scan specific additional scale factor
+#define MDH_2NDHADAMARPULSE		(1 << 13)      // 2nd RF excitation of HADAMAR
+#define MDH_REFPHASESTABSCAN	(1 << 14)      // reference phase stabilization scan         
+#define MDH_PHASESTABSCAN		(1 << 15)      // phase stabilization scan
+#define MDH_D3FFT				(1 << 16)      // execute 3D FFT         
+#define MDH_SIGNREV				(1 << 17)      // sign reversal
+#define MDH_PHASEFFT			(1 << 18)      // execute phase fft     
+#define MDH_SWAPPED				(1 << 19)      // swapped phase/readout direction
+#define MDH_POSTSHAREDLINE		(1 << 20)      // shared line               
+#define MDH_PHASCOR				(1 << 21)      // phase correction data    
+#define MDH_PATREFSCAN			(1 << 22)      // additional scan for PAT reference line/partition
+#define MDH_PATREFANDIMASCAN	(1 << 23)      // additional scan for PAT reference line/partition that is also used as image scan
+#define MDH_REFLECT				(1 << 24)      // reflect line              
+#define MDH_NOISEADJSCAN		(1 << 25)      // noise adjust scan --> Not used in NUM4        
+#define MDH_SHARENOW			(1 << 26)      // all lines are acquired from the actual and previous e.g. phases
+#define MDH_LASTMEASUREDLINE	(1 << 27)      // indicates that the current line is the last measured line of all succeeding e.g. phases
+#define MDH_FIRSTSCANINSLICE	(1 << 28)      // indicates first scan in slice (needed for time stamps)
+#define MDH_LASTSCANINSLICE		(1 << 29)      // indicates  last scan in slice (needed for time stamps)
 
 enum class PMU_Type {
 	END =  0x01FF0000,

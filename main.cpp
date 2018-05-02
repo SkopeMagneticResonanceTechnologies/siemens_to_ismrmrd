@@ -87,7 +87,7 @@ std::vector<MeasurementHeaderBuffer> readMeasurementHeaderBuffers(std::ifstream 
 std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_content, uint32_t num_buffers,
                           std::vector<MeasurementHeaderBuffer> &buffers, std::vector<std::string> &wip_double,
                           Trajectory &trajectory, long &dwell_time_0, long &max_channels, long &radial_views,
-                          std::string &baseLineString, std::string &protocol_name, long &gyromagneticRatio_Hz_Per_Tesla, double &dReadoutOversampling);
+                          std::string &baseLineString, std::string &protocol_name, double &dReadoutOversampling);
 
 std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, std::string &schema_file_name_content,
                      const std::string xml_config);
@@ -98,10 +98,12 @@ ISMRMRD::NDArray<float>
 
 
 ISMRMRD::Acquisition
-        getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, long gyromagneticRatio_Hz_Per_Tesla, double dReadoutOversampling, long max_channels,
+        getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, double dReadoutOversampling, long max_channels,
                        bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB, bool &ignore_Segments, ISMRMRD::NDArray<float> &traj,
                        const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels,
 					   ISMRMRD::IsmrmrdHeader header);
+
+bool isImagingScan(const sScanHeader &scanhead);
 
 void readScanHeader(std::ifstream &siemens_dat, bool VBFILE, sMDH &mdh, sScanHeader &scanhead);
 
@@ -213,66 +215,72 @@ std::string get_time_string(size_t hours, size_t mins, size_t secs)
     return ret;
 }
 
+
 bool fill_ismrmrd_header(ISMRMRD::IsmrmrdHeader& h, const std::string& study_date, const std::string& study_time)
 {
-    try
-    {
+	try
+	{
+		
+		// ---------------------------------
+		// fill more info into the ismrmrd header
+		// ---------------------------------
+		// study
+		bool study_date_needed = false;
+		bool study_time_needed = false;
 
-        // ---------------------------------
-        // fill more info into the ismrmrd header
-        // ---------------------------------
-        // study
-        bool study_date_needed = !study_date.empty();
-        bool study_time_needed = !study_time.empty();
+		if (h.studyInformation)
+		{
+			if (!h.studyInformation->studyDate)
+			{
+				study_date_needed = true;
+			}
 
-        if ( h.studyInformation )
-        {
-            if ( !h.studyInformation->studyDate )
-            {
-                study_date_needed = true;
-            }
+			if (!h.studyInformation->studyTime)
+			{
+				study_time_needed = true;
+			}
+		}
+		else
+		{
+			study_date_needed = true;
+			study_time_needed = true;
+		}
+	
+		if (study_date_needed || study_time_needed)
+		{
+			
+			ISMRMRD::StudyInformation study;
 
-            if ( !h.studyInformation->studyTime )
-            {
-                study_time_needed = true;
-            }
-        }
-        else
-        {
-            study_date_needed = true;
-            study_time_needed = true;
-        }
+			if (h.studyInformation) {
+				// Copy original study information
+				study = h.studyInformation.get();
+			}
 
-        if(study_date_needed || study_time_needed)
-        {
-            ISMRMRD::StudyInformation study;
+			if (study_date_needed && !study_date.empty())
+			{
+				study.studyDate.set(study_date);
+			}
 
-            if(study_date_needed && !study_date.empty())
-            {
-                study.studyDate.set(study_date);
-                std::cout << "Study date: " << study_date << std::endl;
-            }
+			if (study_time_needed && !study_time.empty())
+			{
+				study.studyTime.set(study_time);
+			}
 
-            if(study_time_needed && !study_time.empty())
-            {
-                study.studyTime.set(study_time);
-                std::cout << "Study time: " << study_time << std::endl;
-            }
+			h.studyInformation.set(study);
+		}
 
-            h.studyInformation.set(study);
-        }
+		// ---------------------------------
+		// go back to string
+		// ---------------------------------
 
-        // ---------------------------------
-        // go back to string
-        // ---------------------------------
 
-    }
-    catch(...)
-    {
-        return false;
-    }
+	}
+	catch (...)
+	{
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 void append_buffers_to_xml_header(std::vector<MeasurementHeaderBuffer> &buffers, size_t num_buffers,
@@ -644,6 +652,21 @@ int main(int argc, char *argv[] )
         std::cout << "Parameter XSL stylesheet is: " << parammap_xsl << std::endl;
     }
 
+
+	// Check if output file exists already
+	std::ifstream outfile(ismrmrd_file.c_str());
+	if (outfile.good()) {
+		outfile.close();
+		if (remove(ismrmrd_file.c_str()) != 0) {
+			std::cerr << "Output file could not be deleted. Permission denied." << std::endl;
+			return -1;
+		}
+		else {
+			std::cout << "Output file already existed. It will be replaced..." << std::endl;
+		}
+	}
+	
+
     std::string schema_file_name_content = load_embedded("ismrmrd.xsd");
 
     std::ifstream siemens_dat(siemens_dat_filename.c_str(), std::ios::binary);
@@ -719,12 +742,11 @@ int main(int argc, char *argv[] )
     long dwell_time_0;
     long max_channels;
     long radial_views;
-	long gyromagneticRatio_Hz_Per_Tesla;
 	double dReadoutOversampling;
     std::string baseLineString;
     std::string protocol_name;
     std::string xml_config = readXmlConfig(debug_xml, parammap_file_content, num_buffers, buffers, wip_double, trajectory, dwell_time_0,
-                                           max_channels, radial_views, baseLineString, protocol_name, gyromagneticRatio_Hz_Per_Tesla, dReadoutOversampling);
+                                           max_channels, radial_views, baseLineString, protocol_name, dReadoutOversampling);
 
     // whether this scan is a adjustment scan
     bool isAdjustCoilSens = false;
@@ -775,131 +797,220 @@ int main(int argc, char *argv[] )
     //If this is a spiral acquisition, we will calculate the trajectory and add it to the individual profilesISMRMRD::NDArray<float> traj;
     auto traj = getTrajectory(wip_double, trajectory, dwell_time_0, radial_views);
 
-    uint32_t last_mask = 0;
-    unsigned long int acquisitions = 1;
-    unsigned long int sync_data_packets = 0;
-    sMDH mdh;//For VB line
-    bool first_call = true;
+	// Remember the position in the siemens file
+	size_t position_start = siemens_dat.tellg();
 
-    while (!(last_mask & 1) && //Last scan not encountered
-           (((ParcFileEntries[measurement_number-1].off_+ ParcFileEntries[measurement_number-1].len_)-siemens_dat.tellg()) > sizeof(sScanHeader)))  //not reached end of measurement without acqend
-    {
-        size_t position_in_meas = siemens_dat.tellg();
-        sScanHeader scanhead;
-        readScanHeader(siemens_dat, VBFILE, mdh, scanhead);
+	// Map lines and partitions to a continuous index
+	// E.g. in case of GRAPPA: lines = [1 3 5 7 9] will become  [0 1 2 3 4]
+	std::set<uint16_t> map_kspace_encode_step_1;
+	std::set<uint16_t> map_kspace_encode_step_2;
+	
+	uint16_t lCenterLine = 0;
+	uint16_t lCenterPartition = 0;
 
-        if (!siemens_dat)
-        {
-            std::cerr << "Error reading header at acquisition " << acquisitions << "." << std::endl;
-            break;
-        }
+	// Loop twice through data set
+	// First run: map indices
+	// Second run: Applied remapped indices and append data to ISMRMRD file
+	for (int cRun = 0; cRun <= 1; cRun++) {
 
-        uint32_t dma_length = scanhead.ulFlagsAndDMALength & MDH_DMA_LENGTH_MASK;
-        uint32_t mdh_enable_flags = scanhead.ulFlagsAndDMALength & MDH_ENABLE_FLAGS_MASK;
+		// Set start position
+		siemens_dat.seekg(position_start, siemens_dat.beg);
 
-        //Check if this is synch data, if so, it must be handled differently.
-        if (scanhead.aulEvalInfoMask[0] & ( 1 << 5))
-        {
-            uint32_t last_scan_counter = acquisitions-1;
+		uint32_t last_mask = 0;
+		unsigned long int acquisitions = 1;
+		unsigned long int sync_data_packets = 0;
+		sMDH mdh;//For VB line
+		bool first_call = true;
+		
+		while (!(last_mask & 1) && //Last scan not encountered
+			   (((ParcFileEntries[measurement_number-1].off_+ ParcFileEntries[measurement_number-1].len_)-siemens_dat.tellg()) > sizeof(sScanHeader)))  //not reached end of measurement without acqend
+		{
+			size_t position_in_meas = siemens_dat.tellg();
+			sScanHeader scanhead;
+			readScanHeader(siemens_dat, VBFILE, mdh, scanhead);
 
-            auto waveforms = readSyncdata(siemens_dat, VBFILE,acquisitions, dma_length,scanhead,header,last_scan_counter);
-            for (auto& w : waveforms)
-                ismrmrd_dataset->appendWaveform(w);
-            sync_data_packets++;
-            continue;
-        }
-
-        if(first_call)
-        {
-            uint32_t time_stamp = scanhead.ulTimeStamp;
-
-            // convert to acqusition date and time
-            double timeInSeconds = time_stamp * 2.5 / 1e3;
-
-            size_t hours = (size_t)(timeInSeconds/3600);
-            size_t mins =  (size_t)((timeInSeconds - hours*3600) / 60);
-            size_t secs =  (size_t)(timeInSeconds- hours*3600 - mins*60);
-			
-            std::string study_time = get_time_string(hours, mins, secs);
-
-			if (study_date_user_supplied.empty()) {
-				study_date_user_supplied = header.studyInformation.get().studyDate.get();
+			if (!siemens_dat)
+			{
+				std::cerr << "Error reading header at acquisition " << acquisitions << "." << std::endl;
+				break;
 			}
+
+			uint32_t dma_length = scanhead.ulFlagsAndDMALength & MDH_DMA_LENGTH_MASK;
+			uint32_t mdh_enable_flags = scanhead.ulFlagsAndDMALength & MDH_ENABLE_FLAGS_MASK;
+
+			//Check if this is synch data, if so, it must be handled differently.
+			if (scanhead.aulEvalInfoMask[0] & ( 1 << 5))
+			{
+				uint32_t last_scan_counter = acquisitions-1;
+
+				auto waveforms = readSyncdata(siemens_dat, VBFILE,acquisitions, dma_length,scanhead,header,last_scan_counter);
+				if (cRun == 1) 
+				for (auto& w : waveforms)
+					ismrmrd_dataset->appendWaveform(w);
+				sync_data_packets++;
+				continue;
+			}
+
+			if(first_call)
+			{
+				
+				uint32_t time_stamp = scanhead.ulTimeStamp;
+
+				// convert to acqusition date and time
+				double timeInSeconds = time_stamp * 2.5 / 1e3;
+
+				size_t hours = (size_t)(timeInSeconds/3600);
+				size_t mins =  (size_t)((timeInSeconds - hours*3600) / 60);
+				size_t secs =  (size_t)(timeInSeconds- hours*3600 - mins*60);
 			
-            // if some of the ismrmrd header fields are not filled, here is a place to take some further actions
-            if(!fill_ismrmrd_header(header, study_date_user_supplied, study_time) )
-            {
-                std::cerr << "Failed to further fill XML header" << std::endl;
-            }
+				std::string study_time = get_time_string(hours, mins, secs);
 
-            std::stringstream sstream;
-            ISMRMRD::serialize(header,sstream);
-            xml_config = sstream.str();
 
-            if (xml_file_is_valid(xml_config, schema_file_name_content) <= 0)
-            {
-                std::cerr << "Generated XML is not valid according to the ISMRMRD schema" << std::endl;
-                return -1;
-            }
+			
+				// if some of the ismrmrd header fields are not filled, here is a place to take some further actions
+				if(!fill_ismrmrd_header(header, study_date_user_supplied, study_time) )
+				{
+					std::cerr << "Failed to further fill XML header" << std::endl;
+				}
 
-            if (debug_xml)
-            {
-                std::ofstream o("processed.xml");
-                o.write(xml_config.c_str(), xml_config.size());
-            }
+				std::stringstream sstream;
+				ISMRMRD::serialize(header,sstream);
+				xml_config = sstream.str();
 
-            //This means we should only create XML header and exit
-            if (header_only) {
-                std::ofstream header_out_file(ismrmrd_file.c_str());
-                header_out_file << xml_config;
-                return -1;
-            }
+				if (xml_file_is_valid(xml_config, schema_file_name_content) <= 0)
+				{
+					std::cerr << "Generated XML is not valid according to the ISMRMRD schema" << std::endl;
+					return -1;
+				}
 
-            // Create an ISMRMRD dataset
-        }
+				if (debug_xml)
+				{
+					std::ofstream o("processed.xml");
+					o.write(xml_config.c_str(), xml_config.size());
+				}
 
-        //This check only makes sense in VD line files.
-        if (!VBFILE && (scanhead.lMeasUID != ParcFileEntries[measurement_number-1].measId_))
-        {
-            //Something must have gone terribly wrong. Bail out.
-            if ( first_call )
-            {
-                std::cerr << "Corrupted or retro-recon dataset detected (scanhead.lMeasUID != ParcFileEntries[" << measurement_number-1 << "].measId_)" << std::endl;
-                std::cerr << "Fix the scanhead.lMeasUID ... " << std::endl;
-            }
-            scanhead.lMeasUID = ParcFileEntries[measurement_number-1].measId_;
-        }
+				//This means we should only create XML header and exit
+				if (header_only) {
+					std::ofstream header_out_file(ismrmrd_file.c_str());
+					header_out_file << xml_config;
+					return -1;
+				}
 
-        if ( first_call ) first_call = false;
+				// Create an ISMRMRD dataset
+			}
 
-        //Allocate data for channels
-        std::vector<ChannelHeaderAndData> channels = readChannelHeaders(siemens_dat, VBFILE, scanhead);
+			//This check only makes sense in VD line files.
+			if (!VBFILE && (scanhead.lMeasUID != ParcFileEntries[measurement_number-1].measId_))
+			{
+				//Something must have gone terribly wrong. Bail out.
+				if ( first_call )
+				{
+					std::cerr << "Corrupted or retro-recon dataset detected (scanhead.lMeasUID != ParcFileEntries[" << measurement_number-1 << "].measId_)" << std::endl;
+					std::cerr << "Fix the scanhead.lMeasUID ... " << std::endl;
+				}
+				scanhead.lMeasUID = ParcFileEntries[measurement_number-1].measId_;
+			}
 
-        if (!siemens_dat)
-        {
-            std::cerr << "Error reading data at acquisition " << acquisitions << "." << std::endl;
-            break;
-        }
+			if ( first_call ) first_call = false;
 
-        acquisitions++;
-        last_mask = scanhead.aulEvalInfoMask[0];
+			//Allocate data for channels
+			std::vector<ChannelHeaderAndData> channels = readChannelHeaders(siemens_dat, VBFILE, scanhead);
 
-        if (scanhead.aulEvalInfoMask[0] & 1)
-        {
-            std::cout << "Last scan reached..." << std::endl;
-            break;
-        }
+			if (!siemens_dat)
+			{
+				std::cerr << "Error reading data at acquisition " << acquisitions << "." << std::endl;
+				break;
+			}
 
-        ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, gyromagneticRatio_Hz_Per_Tesla, dReadoutOversampling, max_channels, isAdjustCoilSens,
-                                                          isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header));
+			acquisitions++;
+			last_mask = scanhead.aulEvalInfoMask[0];
 
-    }//End of the while loop
+			if (scanhead.aulEvalInfoMask[0] & 1)
+			{
+				if (cRun == 1) 
+					std::cout << "Last scan reached..." << std::endl;
+				break;
+			}
+
+
+			if (cRun == 0) {
+
+				if (isImagingScan(scanhead)) {
+					uint16_t cLine = scanhead.sLC.ushLine;
+					uint16_t cPartition = scanhead.sLC.ushPartition;
+
+					map_kspace_encode_step_1.insert(cLine);
+					map_kspace_encode_step_2.insert(cPartition);
+					
+				}	
+			}
+			else{
+							
+				// Get acquisition
+				ISMRMRD::Acquisition ismrmrd_acq = getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, dReadoutOversampling, max_channels, isAdjustCoilSens,
+																	isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header);
+
+				// Re-map only imaging scans
+				if (isImagingScan(scanhead)) {   
+
+
+					std::set<std::uint16_t>::iterator it;
+						
+					it = map_kspace_encode_step_1.find(scanhead.sLC.ushLine);
+					if (it != map_kspace_encode_step_1.end()) {
+						ismrmrd_acq.idx().kspace_encode_step_1 = std::distance(map_kspace_encode_step_1.begin(), it);
+					}
+					else {
+						std::cerr << "Could not find line in set." << std::endl;
+					}
+						
+					it = map_kspace_encode_step_2.find(scanhead.sLC.ushPartition);
+					if (it != map_kspace_encode_step_2.end()) {
+						ismrmrd_acq.idx().kspace_encode_step_2 = std::distance(map_kspace_encode_step_2.begin(), it);
+					}
+					else {
+						std::cerr << "Could not find parititon in set." << std::endl;
+					}
+					
+					it = map_kspace_encode_step_1.find(scanhead.ushKSpaceCentreLineNo);
+					if (it != map_kspace_encode_step_1.end()) {
+						lCenterLine = std::distance(map_kspace_encode_step_1.begin(), it);
+					}
+
+					it = map_kspace_encode_step_2.find(scanhead.ushKSpaceCentrePartitionNo);
+					if (it != map_kspace_encode_step_2.end()) {
+						lCenterPartition = std::distance(map_kspace_encode_step_2.begin(), it);
+					}
+					
+				}
+				
+				// Append dataset
+				ismrmrd_dataset->appendAcquisition(ismrmrd_acq);
+			}
+		}//End of the while loop
+
+
+	}// End of Run loop
+
 
     if (!siemens_dat)
     {
         std::cerr << "WARNING: Unexpected error.  Please check the result." << std::endl;
         return -1;
     }
+
+	// Update xml 
+	header.encoding[0].encodingLimits.kspace_encoding_step_1.get().center = lCenterLine;
+	header.encoding[0].encodingLimits.kspace_encoding_step_1.get().minimum = 0;
+	header.encoding[0].encodingLimits.kspace_encoding_step_1.get().maximum = map_kspace_encode_step_1.size();
+
+	header.encoding[0].encodingLimits.kspace_encoding_step_2.get().center = lCenterPartition;
+	header.encoding[0].encodingLimits.kspace_encoding_step_2.get().minimum = 0;
+	header.encoding[0].encodingLimits.kspace_encoding_step_2.get().maximum = map_kspace_encode_step_2.size();
+	
+	std::stringstream sstream;
+	ISMRMRD::serialize(header, sstream);
+	xml_config = sstream.str();
 
     ismrmrd_dataset->writeHeader(xml_config);
 
@@ -1020,8 +1131,40 @@ void readScanHeader(std::ifstream &siemens_dat, bool VBFILE, sMDH &mdh, sScanHea
     }
 }
 
+
+
+bool isImagingScan(const sScanHeader &scanhead) {
+
+
+	if (
+		(scanhead.aulEvalInfoMask[0] & MDH_ACQEND) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_RTFEEDBACK) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_HPFEEDBACK) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_SYNCDATA) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_RAWDATACORRECTION) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_SCANSCALEFACTOR) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_2NDHADAMARPULSE) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_REFPHASESTABSCAN) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_PHASESTABSCAN) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_PHASCOR) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_PATREFSCAN) ||
+		(scanhead.aulEvalInfoMask[0] & MDH_NOISEADJSCAN) ||
+		(scanhead.aulEvalInfoMask[1] == 524288)
+		)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+
+
+
 ISMRMRD::Acquisition
-getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, long gyromagneticRatio_Hz_Per_Tesla, double dReadoutOversampling, long max_channels,
+getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, double dReadoutOversampling, long max_channels,
                bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB,  bool &ignore_Segments, ISMRMRD::NDArray<float> &traj,
                const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels,
 			   ISMRMRD::IsmrmrdHeader header) {
@@ -1189,9 +1332,10 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 	 float fovRead_recon_mm = header.encoding[0].reconSpace.fieldOfView_mm.x;
 	 float fovPhase_recon_mm = header.encoding[0].reconSpace.fieldOfView_mm.y;
+	 long LarmorConstant_Hz_Per_T = header.experimentalConditions.LarmorConstant_Hz_Per_T;
 	 double dAmplRO = 0.0;
 	 double dADCDuration = (double)dwell_time_0 / 1000.0 * header.encoding[0].encodedSpace.matrixSize.x;
-	 double dMomentRO = (double)header.encoding[0].encodedSpace.matrixSize.x / dReadoutOversampling / (fovRead_recon_mm*gyromagneticRatio_Hz_Per_Tesla)*1.0e12;
+	 double dMomentRO = (double)header.encoding[0].encodedSpace.matrixSize.x / dReadoutOversampling / (fovRead_recon_mm*LarmorConstant_Hz_Per_T)*1.0e12;
 
 
 
@@ -1245,7 +1389,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 	 }
 	 
 	 // Frequency and phase of ADC
-	 float fFrequency = ((float)(gyromagneticRatio_Hz_Per_Tesla)*sliceShift_prs[1] * dAmplRO*1.0e-3 + 0.5); // in Hz
+	 float fFrequency = ((float)(LarmorConstant_Hz_Per_T)*sliceShift_prs[1] * dAmplRO*1.0e-3 + 0.5); // in Hz
 	 float fPhase = -fFrequency * 360.0*1.0e-6*dADCDuration*scanhead.ushKSpaceCentreColumn / scanhead.ushSamplesInScan; // in deg
 	 float fdeltaPE = 360.0 / fovPhase_recon_mm * sliceShift_prs[0] * 1000;
 	 
@@ -1696,7 +1840,7 @@ std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, st
 std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_content, uint32_t num_buffers,
                           std::vector<MeasurementHeaderBuffer> &buffers, std::vector<std::string> &wip_double,
                           Trajectory &trajectory, long &dwell_time_0, long &max_channels, long &radial_views,
-                          std::string &baseLineString, std::string &protocol_name, long &gyromagneticRatio_Hz_Per_Tesla, double &dReadoutOversampling) {
+                          std::string &baseLineString, std::string &protocol_name, double &dReadoutOversampling) {
     dwell_time_0= 0;
     max_channels= 0;
     radial_views= 0;
@@ -1729,29 +1873,6 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
                 throw std::runtime_error(sstream.str());
 
             }
-
-			//Get some parameters - lLarmorConstant
-			{
-				const XProtocol::XNode* n2 = boost::apply_visitor(XProtocol::getChildNodeByName("YAPS.alLarmorConstant"), n);
-				std::vector<std::string> temp;
-				if (n2)
-				{
-					temp = boost::apply_visitor(XProtocol::getStringValueArray(), *n2);
-				}
-				else
-				{
-					std::cout << "Search path: YAPS.alLarmorConstant not found." << std::endl;
-				}
-				if (temp.size() == 0)
-				{
-					std::cerr << "Failed to find LarmorConstant" << std::endl;
-					return false;
-				}
-				else
-				{
-					gyromagneticRatio_Hz_Per_Tesla = std::atoi(temp[0].c_str());
-				}
-			}
 
 			//Get readout oversampling - Skope
 			{
