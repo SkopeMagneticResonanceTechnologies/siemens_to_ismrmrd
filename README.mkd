@@ -188,11 +188,11 @@ Embedded Files:
     IsmrmrdParameterMap_Siemens.xsl
     IsmrmrdParameterMap_Siemens_EPI.xsl
     IsmrmrdParameterMap_Siemens_EPI_FLASHREF.xsl
+    IsmrmrdParameterMap_Siemens_EPI_skope.xsl
+    IsmrmrdParameterMap_Siemens_PreZeros.xsl
+    IsmrmrdParameterMap_Siemens_T1Mapping_SASHA.xsl
     IsmrmrdParameterMap_Siemens_VB17.xml
     IsmrmrdParameterMap_Siemens_skope.xsl
-    RadialParameterMap.xml
-    SpiralParameterMap.xml
-    SpiralParameterMap_MSH.xml
 ```
 Any of these files can be extracted and saved locally by running the converter with the ***-e*** option and specifying the file name. For example:
 ```sh
