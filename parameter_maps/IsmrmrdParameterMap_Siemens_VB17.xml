@@ -84,6 +84,9 @@
         <p><s>DICOM.InstitutionName</s>                             <d>siemens.DICOM.InstitutionName</d></p>
         <!-- experimentalConditionsType --> 
         <p><s>DICOM.lFrequency</s>                                  <d>siemens.DICOM.lFrequency</d></p>
+		<p><s>YAPS.alLarmorConstant</s>                             <d>siemens.YAPS.alLarmorConstant</d></p>
+		
+		
         <!-- dicomParametersType --> 
         <p><s>YAPS.tFrameOfReference</s>                            <d>siemens.YAPS.tFrameOfReference</d></p>
         <p><s>DICOM.Modality</s>                                    <d>siemens.DICOM.Modality</d></p>
