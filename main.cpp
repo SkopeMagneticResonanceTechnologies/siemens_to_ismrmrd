@@ -370,7 +370,7 @@ std::string ProcessParameterMap(const XProtocol::XNode& node, const char* mapfil
                 }
                 else
                 {
-                    std::cout << "Search path: " << search_path << " not found." << std::endl;
+                    //std::cout << "Search path: " << search_path << " not found." << std::endl;
                 }
 
                 if (index >= 0)
@@ -381,7 +381,7 @@ std::string ProcessParameterMap(const XProtocol::XNode& node, const char* mapfil
                     }
                     else
                     {
-                        std::cout << "Parameter index (" << index << ") not valid for search path " << search_path << std::endl;
+                        //std::cout << "Parameter index (" << index << ") not valid for search path " << search_path << std::endl;
                         continue;
                     }
                 }
