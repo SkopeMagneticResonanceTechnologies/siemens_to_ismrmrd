@@ -497,7 +497,7 @@ int main(int argc, char *argv[] )
             ("version,v",               "Prints converter version and ISMRMRD version")
             ("file,f",                  po::value<std::string>(&siemens_dat_filename), "<SIEMENS dat file>")
             ("measNum,z",               po::value<unsigned int>(&measurement_number)->default_value(1), "<Measurement number>")
-    ("pMap,m",                  po::value<std::string>(&parammap_file), "<Parameter map XML file>")
+			("pMap,m",                  po::value<std::string>(&parammap_file), "<Parameter map XML file>")
             ("pMapStyle,x",             po::value<std::string>(&parammap_xsl), "<Parameter stylesheet XSL file>")
             ("user-map",                po::value<std::string>(&usermap_file), "<Provide a parameter map XML file>")
             ("user-stylesheet",         po::value<std::string>(&usermap_xsl), "<Provide a parameter stylesheet XSL file>")
@@ -1329,6 +1329,30 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 	 // Determine position in magnet coordinate system
 	 ISMRMRD::ismrmrd_transform_SCT_XYZ(header.measurementInformation->patientPosition.c_str(), ismrmrd_acq.position(), ismrmrd_acq.position());
+
+	 std::vector<ISMRMRD::UserParameterLong> vUserParam = header.userParameters.get().userParameterLong;
+	 
+	 long lReadOutMode = 1; // Monopolar readout
+	 for (int cParam = 0; cParam < vUserParam.size(); cParam++) {
+
+		 std::string name = vUserParam.at(cParam).name;
+		 long value = vUserParam.at(cParam).value;
+
+		 if (name.compare("readOutMode") == 0) {
+			 lReadOutMode = value;
+		 }
+	 }
+
+	 if (lReadOutMode == 2) { // Bipolar readout mode
+		 if (ismrmrd_acq.idx().contrast % 2) { // odd echoes
+			 // Flip readout vector
+			 // The slice vector also must change sign to keep the handedness
+			 for (int i = 0; i < 3; i++) {
+				 ismrmrd_acq.read_dir()[i]  = -ismrmrd_acq.read_dir()[i];
+				 ismrmrd_acq.slice_dir()[i] = -ismrmrd_acq.slice_dir()[i];
+			 }
+		 }
+	 }
 
 	 float fovRead_recon_mm = header.encoding[0].reconSpace.fieldOfView_mm.x;
 	 float fovPhase_recon_mm = header.encoding[0].reconSpace.fieldOfView_mm.y;

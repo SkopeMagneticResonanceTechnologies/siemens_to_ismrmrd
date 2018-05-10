@@ -617,48 +617,48 @@
                         <center>0</center>
                     </average>
                 </encodingLimits>
-        <parallelImaging>
-          <accelerationFactor>
-                    <kspace_encoding_step_1>
-              <xsl:choose>
-            <xsl:when test="not(siemens/MEAS/sPat/lAccelFactPE)">1</xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="(siemens/MEAS/sPat/lAccelFactPE)"/>
-            </xsl:otherwise>
-              </xsl:choose>
-                    </kspace_encoding_step_1>
-                    <kspace_encoding_step_2>
-              <xsl:choose>
-            <xsl:when test="not(siemens/MEAS/sPat/lAccelFact3D)">1</xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="(siemens/MEAS/sPat/lAccelFact3D)"/>
-            </xsl:otherwise>
-              </xsl:choose>
-                    </kspace_encoding_step_2>
-          </accelerationFactor>
-          <calibrationMode>
-                    <xsl:choose>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 1">other</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 2">embedded</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 4">separate</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 8">separate</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">interleaved</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">interleaved</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">interleaved</xsl:when>
-              <xsl:otherwise>other</xsl:otherwise>
-                    </xsl:choose>
-          </calibrationMode>
-          <xsl:if test="(siemens/MEAS/sPat/ucRefScanMode = 1) or (siemens/MEAS/sPat/ucRefScanMode = 16) or (siemens/MEAS/sPat/ucRefScanMode = 32) or (siemens/MEAS/sPat/ucRefScanMode = 64)">
-                    <interleavingDimension>
-              <xsl:choose>
-            <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">average</xsl:when>
-            <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">repetition</xsl:when>
-            <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">phase</xsl:when>
-            <xsl:otherwise>other</xsl:otherwise>
-              </xsl:choose>
-                    </interleavingDimension>
-          </xsl:if>
-        </parallelImaging>
+				<parallelImaging>
+				  <accelerationFactor>
+							<kspace_encoding_step_1>
+					  <xsl:choose>
+					<xsl:when test="not(siemens/MEAS/sPat/lAccelFactPE)">1</xsl:when>
+					<xsl:otherwise>
+					  <xsl:value-of select="(siemens/MEAS/sPat/lAccelFactPE)"/>
+					</xsl:otherwise>
+					  </xsl:choose>
+							</kspace_encoding_step_1>
+							<kspace_encoding_step_2>
+					  <xsl:choose>
+					<xsl:when test="not(siemens/MEAS/sPat/lAccelFact3D)">1</xsl:when>
+					<xsl:otherwise>
+					  <xsl:value-of select="(siemens/MEAS/sPat/lAccelFact3D)"/>
+					</xsl:otherwise>
+					  </xsl:choose>
+							</kspace_encoding_step_2>
+				  </accelerationFactor>
+				  <calibrationMode>
+							<xsl:choose>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 1">other</xsl:when>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 2">embedded</xsl:when>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 4">separate</xsl:when>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 8">separate</xsl:when>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">interleaved</xsl:when>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">interleaved</xsl:when>
+					  <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">interleaved</xsl:when>
+					  <xsl:otherwise>other</xsl:otherwise>
+							</xsl:choose>
+				  </calibrationMode>
+				  <xsl:if test="(siemens/MEAS/sPat/ucRefScanMode = 1) or (siemens/MEAS/sPat/ucRefScanMode = 16) or (siemens/MEAS/sPat/ucRefScanMode = 32) or (siemens/MEAS/sPat/ucRefScanMode = 64)">
+							<interleavingDimension>
+					  <xsl:choose>
+					<xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">average</xsl:when>
+					<xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">repetition</xsl:when>
+					<xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">phase</xsl:when>
+					<xsl:otherwise>other</xsl:otherwise>
+					  </xsl:choose>
+							</interleavingDimension>
+				  </xsl:if>
+				</parallelImaging>
 				<echoTrainLength>
 					<xsl:value-of select="$numberOfContrasts"/>
 				</echoTrainLength>
@@ -727,6 +727,15 @@
 
             <userParameters>
 			
+				<xsl:if test="siemens/MEAS/ucReadOutMode">
+					<userParameterLong>
+							<name>readOutMode</name>
+							<value>
+								<xsl:value-of select="siemens/MEAS/ucReadOutMode"/>
+							</value>
+					</userParameterLong>
+				</xsl:if>
+			
 				<!-- Trig to ADC time: imaging scans -->
 				<userParameterDouble>
 					<name>triggerToAcquisitionDelay</name>
@@ -775,7 +784,8 @@
                         </value>
                     </userParameterLong>
                 </xsl:if>
-
+				
+				
                 <xsl:if test="not(siemens/MEAS/sPhysioImaging/lSignal1 = 1) and not(siemens/MEAS/sPhysioImaging/lSignal1 = 16) and (siemens/MEAS/sPhysioImaging/lMethod1 = 8)">
                     <xsl:if test="siemens/MEAS/sFastImaging/lShots >= 1">
                         <xsl:if test="siemens/MEAS/sPhysioImaging/lPhases > 1">
@@ -803,7 +813,8 @@
                     </xsl:if>
                 </xsl:if>
 
-                <xsl:if test="(siemens/MEAS/ucOneSeriesForAllMeas = 2) or (siemens/MEAS/ucOneSeriesForAllMeas = 8)">
+				
+				<xsl:if test="(siemens/MEAS/ucOneSeriesForAllMeas = 2) or (siemens/MEAS/ucOneSeriesForAllMeas = 8)">
                     <userParameterLong>
                         <name>MultiSeriesForSlices</name>
                         <value>
@@ -1033,6 +1044,9 @@
                 </xsl:if>
 
             </userParameters>
+			
+			
+			
 
         </ismrmrdHeader>
     </xsl:template>
