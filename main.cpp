@@ -1362,7 +1362,11 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 	 double dMomentRO = (double)header.encoding[0].encodedSpace.matrixSize.x / dReadoutOversampling / (fovRead_recon_mm*LarmorConstant_Hz_Per_T)*1.0e12;
 
 
+	 if(!header.sequenceParameters)
+		 std::cerr << "Pointer to sequenceParameters is NULL" << std::endl;
 
+	 if (!header.sequenceParameters.get().sequence_type)
+		 std::cerr << "Pointer to sequenceParameters.sequence_type is NULL" << std::endl;
 
 	
 	 if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
