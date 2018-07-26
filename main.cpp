@@ -796,31 +796,12 @@ int main(int argc, char *argv[] )
     auto ismrmrd_dataset = boost::make_shared<ISMRMRD::Dataset>(ismrmrd_file.c_str(), ismrmrd_group.c_str(), true);
     //If this is a spiral acquisition, we will calculate the trajectory and add it to the individual profilesISMRMRD::NDArray<float> traj;
     auto traj = getTrajectory(wip_double, trajectory, dwell_time_0, radial_views);
-
-	// Remember the position in the siemens file
-	size_t position_start = siemens_dat.tellg();
-
-	// Map lines and partitions to a continuous index
-	// E.g. in case of GRAPPA: lines = [1 3 5 7 9] will become  [0 1 2 3 4]
-	std::set<uint16_t> map_kspace_encode_step_1;
-	std::set<uint16_t> map_kspace_encode_step_2;
-	
-	uint16_t lCenterLine = 0;
-	uint16_t lCenterPartition = 0;
-
-	// Loop twice through data set
-	// First run: map indices
-	// Second run: Applied remapped indices and append data to ISMRMRD file
-	for (int cRun = 0; cRun <= 1; cRun++) {
-
-		// Set start position
-		siemens_dat.seekg(position_start, siemens_dat.beg);
-
-		uint32_t last_mask = 0;
-		unsigned long int acquisitions = 1;
-		unsigned long int sync_data_packets = 0;
-		sMDH mdh;//For VB line
-		bool first_call = true;
+		
+	uint32_t last_mask = 0;
+	unsigned long int acquisitions = 1;
+	unsigned long int sync_data_packets = 0;
+	sMDH mdh;//For VB line
+	bool first_call = true;
 		
 		while (!(last_mask & 1) && //Last scan not encountered
 			   (((ParcFileEntries[measurement_number-1].off_+ ParcFileEntries[measurement_number-1].len_)-siemens_dat.tellg()) > sizeof(sScanHeader)))  //not reached end of measurement without acqend
@@ -844,7 +825,6 @@ int main(int argc, char *argv[] )
 				uint32_t last_scan_counter = acquisitions-1;
 
 				auto waveforms = readSyncdata(siemens_dat, VBFILE,acquisitions, dma_length,scanhead,header,last_scan_counter);
-				if (cRun == 1) 
 				for (auto& w : waveforms)
 					ismrmrd_dataset->appendWaveform(w);
 				sync_data_packets++;
@@ -927,91 +907,23 @@ int main(int argc, char *argv[] )
 
 			if (scanhead.aulEvalInfoMask[0] & 1)
 			{
-				if (cRun == 1) 
-					std::cout << "Last scan reached..." << std::endl;
+				std::cout << "Last scan reached..." << std::endl;
 				break;
 			}
 
-
-			if (cRun == 0) {
-
-				if (isImagingScan(scanhead)) {
-					uint16_t cLine = scanhead.sLC.ushLine;
-					uint16_t cPartition = scanhead.sLC.ushPartition;
-
-					map_kspace_encode_step_1.insert(cLine);
-					map_kspace_encode_step_2.insert(cPartition);
-					
-				}	
-			}
-			else{
-							
-				// Get acquisition
-				ISMRMRD::Acquisition ismrmrd_acq = getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, dReadoutOversampling, max_channels, isAdjustCoilSens,
-																	isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header);
-
-				// Re-map only imaging scans
-				if (isImagingScan(scanhead)) {   
-
-
-					std::set<std::uint16_t>::iterator it;
-						
-					it = map_kspace_encode_step_1.find(scanhead.sLC.ushLine);
-					if (it != map_kspace_encode_step_1.end()) {
-						ismrmrd_acq.idx().kspace_encode_step_1 = std::distance(map_kspace_encode_step_1.begin(), it);
-					}
-					else {
-						std::cerr << "Could not find line in set." << std::endl;
-					}
-						
-					it = map_kspace_encode_step_2.find(scanhead.sLC.ushPartition);
-					if (it != map_kspace_encode_step_2.end()) {
-						ismrmrd_acq.idx().kspace_encode_step_2 = std::distance(map_kspace_encode_step_2.begin(), it);
-					}
-					else {
-						std::cerr << "Could not find parititon in set." << std::endl;
-					}
-					
-					it = map_kspace_encode_step_1.find(scanhead.ushKSpaceCentreLineNo);
-					if (it != map_kspace_encode_step_1.end()) {
-						lCenterLine = std::distance(map_kspace_encode_step_1.begin(), it);
-					}
-
-					it = map_kspace_encode_step_2.find(scanhead.ushKSpaceCentrePartitionNo);
-					if (it != map_kspace_encode_step_2.end()) {
-						lCenterPartition = std::distance(map_kspace_encode_step_2.begin(), it);
-					}
-					
-				}
-				
-				// Append dataset
-				ismrmrd_dataset->appendAcquisition(ismrmrd_acq);
-			}
+			// Append dataset
+			ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, dReadoutOversampling, max_channels, isAdjustCoilSens,
+				isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header));
+			
 		}//End of the while loop
 
-
-	}// End of Run loop
-
-
+		
     if (!siemens_dat)
     {
         std::cerr << "WARNING: Unexpected error.  Please check the result." << std::endl;
         return -1;
     }
-
-	// Update xml 
-	header.encoding[0].encodingLimits.kspace_encoding_step_1.get().center = lCenterLine;
-	header.encoding[0].encodingLimits.kspace_encoding_step_1.get().minimum = 0;
-	header.encoding[0].encodingLimits.kspace_encoding_step_1.get().maximum = map_kspace_encode_step_1.size();
-
-	header.encoding[0].encodingLimits.kspace_encoding_step_2.get().center = lCenterPartition;
-	header.encoding[0].encodingLimits.kspace_encoding_step_2.get().minimum = 0;
-	header.encoding[0].encodingLimits.kspace_encoding_step_2.get().maximum = map_kspace_encode_step_2.size();
 	
-	std::stringstream sstream;
-	ISMRMRD::serialize(header, sstream);
-	xml_config = sstream.str();
-
     ismrmrd_dataset->writeHeader(xml_config);
 
     //Mystery bytes. There seems to be 160 mystery bytes at the end of the data.
@@ -2005,7 +1917,7 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
 
                     int traj = atoi(temp[0].c_str());
                     trajectory = Trajectory(traj);
-                    std::cout << "Trajectory is: " << traj << std::endl;
+                    //std::cout << "Trajectory is: " << traj << std::endl;
                 }
             }
 
@@ -2094,7 +2006,7 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
                 }
                 if (temp.size() != 1)
                 {
-                    std::cout << "Failed to find YAPS.lFirstFourierLine array" << std::endl;
+                    //std::cout << "Failed to find YAPS.lFirstFourierLine array" << std::endl;
                     has_FirstFourierLine = false;
                 }
                 else
@@ -2157,7 +2069,7 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
                 }
                 if (temp.size() != 1)
                 {
-                    std::cout << "Failed to find YAPS.lFirstFourierPartition array" << std::endl;
+                    //std::cout << "Failed to find YAPS.lFirstFourierPartition array" << std::endl;
                     has_FirstFourierPartition = false;
                 }
                 else
@@ -2197,8 +2109,6 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
                     center_partition = 0;
                 }
 
-                std::cout << "center_line = " << center_line << std::endl;
-                std::cout << "center_partition = " << center_partition << std::endl;
             }
 
             //Get some parameters - radial views
@@ -2293,13 +2203,13 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
 std::vector<MeasurementHeaderBuffer> readMeasurementHeaderBuffers(std::ifstream &siemens_dat, uint32_t num_buffers) {
     auto buffers = std::vector<MeasurementHeaderBuffer>(num_buffers);
 
-    std::cout << "Number of parameter buffers: " << num_buffers << std::endl;
+    //std::cout << "Number of parameter buffers: " << num_buffers << std::endl;
 
     char tmp_bufname[32];
     for (int b = 0; b < num_buffers; b++)
     {
         siemens_dat.getline(tmp_bufname, 32, '\0');
-        std::cout << "Buffer Name: " << tmp_bufname << std::endl;
+        //std::cout << "Buffer Name: " << tmp_bufname << std::endl;
         buffers[b].name = std::string(tmp_bufname);
         uint32_t buflen = 0;
         siemens_dat.read((char*)(&buflen), sizeof(buflen));
@@ -2331,7 +2241,7 @@ readParcFileEntries(std::ifstream &siemens_dat, const MrParcRaidFileHeader &Parc
         ParcFileEntries[0].len_ = siemens_dat.tellg(); //This is the whole size of the dat file
         siemens_dat.seekg(0, std::ios_base::beg); //Rewind a bit, we have no raid file header.
 
-        std::cout << "Protocol name: " << ParcFileEntries[0].protName_ << std::endl; // blank
+        //std::cout << "Protocol name: " << ParcFileEntries[0].protName_ << std::endl; // blank
     }
     else
     {
