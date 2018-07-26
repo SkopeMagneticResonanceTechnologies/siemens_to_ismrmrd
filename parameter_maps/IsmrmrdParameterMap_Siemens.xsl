@@ -583,6 +583,46 @@
                         </maximum>
                         <center>0</center>
                     </average>
+					<user_0>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_0>
+					<user_1>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_1>
+					<user_2>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_2>
+					<user_3>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_3>
+					<user_4>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_4>
+					<user_5>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_5>
+					<user_6>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_6>
+					<user_7>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_7>
                 </encodingLimits>
         <parallelImaging>
           <accelerationFactor>
