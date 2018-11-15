@@ -944,149 +944,193 @@
                   </userParameterDouble>
                 </xsl:if>
 
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[1]">
-                  <userParameterDouble>
-                      <name>MaxwellCoefficient_0</name>
-                      <value>
-                          <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[1]" />
-                      </value>
-                  </userParameterDouble>
-                </xsl:if>
+				
+				
+				
+				
+				<!-- ECC  -->
+					<!-- B0 compensation amplitude X -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Amp_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Amp_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Amp_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<!-- B0 compensation amplitude Y -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Amp_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Amp_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Amp_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<!-- B0 compensation amplitude Z -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Amp_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Amp_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Amp_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>				
+					
+					<!-- B0 compensation constant X -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Tau_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Tau_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Tau_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
 
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[3]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_1</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[2]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
+					<!-- B0 compensation constant Y -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Tau_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Tau_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Tau_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<!-- B0 compensation constant Z -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Tau_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Tau_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Tau_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+				<!-- ECC end -->
+				
+				
 
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[3]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_2</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[3]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[4]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_3</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[4]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[5]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_4</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[5]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[6]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_5</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[6]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[7]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_6</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[7]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[8]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_7</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[8]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[9]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_8</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[9]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[10]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_9</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[10]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[11]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_10</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[11]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[12]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_11</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[12]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[13]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_12</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[13]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[14]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_13</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[14]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[15]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_14</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[15]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[16]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_15</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[16]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
+                
 
             </userParameters>
 			
