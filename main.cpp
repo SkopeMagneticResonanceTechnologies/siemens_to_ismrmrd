@@ -1121,8 +1121,8 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 	// Set directions in magnet/physical coordinate system
     ISMRMRD::ismrmrd_quaternion_to_directions_XYZ(quat, header.measurementInformation->patientPosition.c_str(),
-												  ismrmrd_acq.phase_dir(),
 												  ismrmrd_acq.read_dir(),
+												  ismrmrd_acq.phase_dir(),												  
 												  ismrmrd_acq.slice_dir());
 
 
