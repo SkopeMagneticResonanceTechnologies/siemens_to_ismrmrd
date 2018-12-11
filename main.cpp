@@ -1289,7 +1289,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 		long lRegridDelaySamplesTime = 0;
 
 		if (!header.encoding.at(0).trajectoryDescription)
-			std::cerr << "Pointer toheader.encoding.at(0).trajectoryDescription is NULL" << std::endl;
+			std::cerr << "Pointer to header.encoding.at(0).trajectoryDescription is NULL. Have you chosen the right style sheet?" << std::endl;
 
 		ISMRMRD::TrajectoryDescription trajDes = header.encoding.at(0).trajectoryDescription.get(); 
 
