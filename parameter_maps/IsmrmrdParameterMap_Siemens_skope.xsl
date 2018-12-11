@@ -45,9 +45,17 @@
         <xsl:value-of select="substring(string(siemens/YAPS/tFrameOfReference),30,8)"/>
     </xsl:variable>
 	
-	<xsl:variable name="birthDate">
-        <xsl:value-of select="siemens/IRIS/RECOMPOSE/PatientBirthDay"/>
-    </xsl:variable>
+	<xsl:variable name="birthDate">	
+		<xsl:choose>
+		  <xsl:when test="siemens/IRIS/RECOMPOSE/PatientBirthDay='xxxxxxxx'">
+			<xsl:value-of select="19000101"/>
+		  </xsl:when>
+		  <xsl:otherwise>
+			<xsl:value-of select="siemens/IRIS/RECOMPOSE/PatientBirthDay"/>
+		  </xsl:otherwise>
+		</xsl:choose> 
+	</xsl:variable>
+	
 	<xsl:variable name="birthYear">
         <xsl:value-of select="substring($birthDate,1,4)"/>
     </xsl:variable>
@@ -58,9 +66,18 @@
         <xsl:value-of select="substring($birthDate,7,2)"/>
     </xsl:variable>
 	
-	<xsl:variable name="studyDate">
-		<xsl:value-of select="substring(string(siemens/YAPS/tFrameOfReference),30,8)" />
-    </xsl:variable>  
+	<!-- The date of the study is given after the 10th dot in the tFrameOfReference -->
+	<xsl:variable name="temp1"><xsl:value-of select="substring-after(string(siemens/YAPS/tFrameOfReference), '.')" /></xsl:variable> 
+	<xsl:variable name="temp2"><xsl:value-of select="substring-after($temp1, '.')" /></xsl:variable> 
+	<xsl:variable name="temp3"><xsl:value-of select="substring-after($temp2, '.')" /></xsl:variable> 
+	<xsl:variable name="temp4"><xsl:value-of select="substring-after($temp3, '.')" /></xsl:variable> 
+	<xsl:variable name="temp5"><xsl:value-of select="substring-after($temp4, '.')" /></xsl:variable> 
+	<xsl:variable name="temp6"><xsl:value-of select="substring-after($temp5, '.')" /></xsl:variable> 
+	<xsl:variable name="temp7"><xsl:value-of select="substring-after($temp6, '.')" /></xsl:variable> 
+	<xsl:variable name="temp8"><xsl:value-of select="substring-after($temp7, '.')" /></xsl:variable> 
+	<xsl:variable name="temp9"><xsl:value-of select="substring-after($temp8, '.')" /></xsl:variable> 
+	<xsl:variable name="studyDate"><xsl:value-of select="substring-after($temp9, '.')" /></xsl:variable>
+	
 	<xsl:variable name="studyYear">
         <xsl:value-of select="substring($studyDate,1,4)"/>
     </xsl:variable>
