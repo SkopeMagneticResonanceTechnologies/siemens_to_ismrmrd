@@ -1284,11 +1284,14 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 	 if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
 	 
 		long lRegridRampupTime = 0;
-		long lRegridFlattopTime = 0;
+		long lRegridFlattopTime = 0; 
 		long lRegridRampdownTime = 0;
 		long lRegridDelaySamplesTime = 0;
 
-		ISMRMRD::TrajectoryDescription trajDes = header.encoding.at(0).trajectoryDescription.get();
+		if (!header.encoding.at(0).trajectoryDescription)
+			std::cerr << "Pointer toheader.encoding.at(0).trajectoryDescription is NULL" << std::endl;
+
+		ISMRMRD::TrajectoryDescription trajDes = header.encoding.at(0).trajectoryDescription.get(); 
 
 		
 		for (int cParam = 0; cParam < trajDes.userParameterLong.size(); cParam++) {
