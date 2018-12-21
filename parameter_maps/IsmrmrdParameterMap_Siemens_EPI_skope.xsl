@@ -290,9 +290,15 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                         <name>numberOfNavigators</name>
                         <value>3</value>
                     </userParameterLong>
+					<userParameterLong>
+                        <name>regridMode</name>
+                        <value>
+						 <xsl:value-of select="siemens/YAPS/alRegridMode"/>
+						</value>
+                    </userParameterLong>
                     <!-- Switch depending on ramp sampling -->
                     <xsl:choose>
-                      <xsl:when test="siemens/YAPS/alRegridMode = 2">
+                      <xsl:when test="siemens/YAPS/alRegridMode = 2 or siemens/YAPS/alRegridMode = 4">
                         <!-- Ramp sampling is ON -->
                         <userParameterLong>
                           <name>rampUpTime</name>
@@ -367,7 +373,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     </matrixSize>
                     <fieldOfView_mm>
                         <x>
-                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dReadoutFOV"/>
+                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dReadoutFOV * $readoutOversampling"/>
                         </x>
                         <y>
                             <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dPhaseFOV * (1+$phaseOversampling)"/>
