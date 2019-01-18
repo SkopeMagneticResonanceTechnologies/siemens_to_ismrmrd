@@ -482,7 +482,7 @@
                             <xsl:value-of select="siemens/YAPS/iNoOfFourierLines - 1"/>
                         </maximum>
                         <center>
-                            <xsl:value-of select="floor(siemens/MEAS/sKSpace/lPhaseEncodingLines div 2)"/>
+                            <xsl:value-of select="siemens/MEAS/sKSpace/lPhaseEncodingLines *($partialFourierPhase - 0.5)"/>
                         </center>
                     </kspace_encoding_step_1>
                     <kspace_encoding_step_2>
