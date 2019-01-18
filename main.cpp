@@ -484,7 +484,7 @@ int main(int argc, char *argv[] )
     bool flash_pat_ref_scan = false;
     bool header_only = false;
     bool append_buffers = false;
-	bool ignore_Segments = true;
+	bool ignore_Segments = false;
 
     bool list = false;
     std::string to_extract;
@@ -510,7 +510,7 @@ int main(int argc, char *argv[] )
             ("headerOnly,H",            po::value<bool>(&header_only)->implicit_value(true), "<HEADER ONLY flag (create xml header only)>")
             ("bufferAppend,B",          po::value<bool>(&append_buffers)->implicit_value(true), "<Append Siemens protocol buffers (bas64) to user parameters>")
             ("studyDate",               po::value<std::string>(&study_date_user_supplied), "<User can supply study date, in the format of yyyy-mm-dd>")
-			("ignoreSegments,i", po::value<bool>(&ignore_Segments)->implicit_value(true), "<Ignore segments>")
+			("ignoreSegments,i", po::value<bool>(&ignore_Segments)->implicit_value(false), "<Ignore segments>")
             ;
 
     po::options_description display_options("Allowed options");
@@ -791,6 +791,11 @@ int main(int argc, char *argv[] )
     }
 
     // Free memory used for MeasurementHeaderBuffers
+
+	// For EPI, we do not care about segments
+	if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
+		ignore_Segments = true;
+	} 
 
 
     auto ismrmrd_dataset = boost::make_shared<ISMRMRD::Dataset>(ismrmrd_file.c_str(), ismrmrd_group.c_str(), true);

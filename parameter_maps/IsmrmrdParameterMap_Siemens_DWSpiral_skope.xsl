@@ -292,7 +292,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     <comment>Spiral sequence</comment>
                 </trajectoryDescription>
 				
-				<!--Hardcoded in sequence - 3 segments per spiral arm -->
+				<!--Hardcoded in sequence  -->
 				<echoTrainLength>10</echoTrainLength>
 				
                 <encodedSpace>
@@ -361,7 +361,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     <kspace_encoding_step_1>
                         <minimum>0</minimum>
                         <maximum>
-                            <xsl:value-of select="floor(siemens/YAPS/iNoOfFourierLines div siemens/YAPS/GradientEchoTrainLength)"/>
+                            <xsl:value-of select="floor(siemens/YAPS/iNoOfFourierLines div siemens/YAPS/GradientEchoTrainLength) - 1"/>
                         </maximum>
                         <center>0</center>
                     </kspace_encoding_step_1>
@@ -416,7 +416,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     <segment>
                         <minimum>0</minimum>
 						<!--Hardcoded value in sequence-->
-                        <maximum>10</maximum>
+                        <maximum>9</maximum>
                         <center>0</center>
                     </segment>
                     <contrast>
@@ -563,7 +563,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                         </flipAngle_deg>
                     </xsl:if>
                 </xsl:for-each>
-                <sequence_type>Unknown</sequence_type>
+                <sequence_type>SE</sequence_type>
                 <xsl:if test="siemens/YAPS/lEchoSpacing">
                     <echo_spacing>
                         <!--Hardcoded value in sequence and rounded to gradient raster time-->
@@ -578,7 +578,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 					<userParameterDouble>
 					    <!--Hardcoded value in sequence-->
 						<name>triggerToAcquisitionDelay</name>
-						<value>0.000200</value>
+						<value>0.200</value>
 					</userParameterDouble>
 								
 
