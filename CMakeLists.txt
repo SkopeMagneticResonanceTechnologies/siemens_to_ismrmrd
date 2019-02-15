@@ -81,31 +81,23 @@ target_link_libraries(embed ${Boost_LIBRARIES})
 
 add_custom_command(
     OUTPUT defaults.cpp
-    COMMAND embed ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap.xml
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_VB17.xml 
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens.xml 
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_skope.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_PreZeros.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_EPI.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_EPI_skope.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_EPI_FLASHREF.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_T1Mapping_SASHA.xsl
+    COMMAND embed ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_VB17.xml 
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_VD_VE.xml 
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_Default.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_GRE.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_EPI_2D.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_EPI_3D.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_Spiral.xsl
                 ${ISMRMRD_SCHEMA_DIR}/ismrmrd.xsd
                 defaults.cpp
     VERBATIM
-    DEPENDS embed ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap.xml
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_VB17.xml
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens.xml 
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_skope.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_PreZeros.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_EPI.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_EPI_skope.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_EPI_FLASHREF.xsl
-                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_Siemens_T1Mapping_SASHA.xsl
+    DEPENDS embed ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_VB17.xml
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/IsmrmrdParameterMap_VD_VE.xml             
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_Default.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_GRE.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_EPI_2D.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_EPI_3D.xsl
+                ${CMAKE_CURRENT_SOURCE_DIR}/parameter_maps/StyleSheet_Spiral.xsl				
                 ${ISMRMRD_SCHEMA_DIR}/ismrmrd.xsd
                 )
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
 <xsl:stylesheet version="1.0"
-    xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
     <xsl:output method="xml" indent="yes"/>
 
@@ -26,11 +26,40 @@
     <xsl:variable name="partialFourierPhase">
         <xsl:choose>
             <xsl:when test="siemens/MEAS/sKSpace/ucPhasePartialFourier = 1">0.5</xsl:when>
-            <xsl:when test="siemens/MEAS/sKSpace/ucPhasePartialFourier = 2">0.75</xsl:when>
-            <xsl:when test="siemens/MEAS/sKSpace/ucPhasePartialFourier = 4">0.875</xsl:when>
+            <xsl:when test="siemens/MEAS/sKSpace/ucPhasePartialFourier = 2">0.625</xsl:when>
+            <xsl:when test="siemens/MEAS/sKSpace/ucPhasePartialFourier = 4">0.75</xsl:when>
+            <xsl:when test="siemens/MEAS/sKSpace/ucPhasePartialFourier = 8">0.875</xsl:when>
             <xsl:otherwise>1.0</xsl:otherwise>
         </xsl:choose>
     </xsl:variable>
+	
+	<xsl:variable name="readoutOversampling">
+		<xsl:choose>
+			<xsl:when test="not(siemens/YAPS/flReadoutOSFactor)">1</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="siemens/YAPS/flReadoutOSFactor"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
+	<xsl:variable name="accelerationFactor1">
+		<xsl:choose>
+			<xsl:when test="not(siemens/MEAS/sPat/lAccelFactPE)">1</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="(siemens/MEAS/sPat/lAccelFactPE)"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+
+	<xsl:variable name="accelerationFactor2">
+		<xsl:choose>
+			<xsl:when test="not(siemens/MEAS/sPat/lAccelFact3D)">1</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="(siemens/MEAS/sPat/lAccelFact3D)"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:variable>
+	
 
     <xsl:variable name="numberOfContrasts">
         <xsl:value-of select="siemens/MEAS/lContrasts"/>
@@ -43,7 +72,34 @@
     <xsl:variable name="patientID">
         <xsl:value-of select="substring(siemens/IRIS/RECOMPOSE/PatientLOID, 6)"/>
     </xsl:variable>
-
+	
+	<xsl:variable name="birthDate">
+        <xsl:value-of select="siemens/IRIS/RECOMPOSE/PatientBirthDay"/>
+    </xsl:variable>
+	<xsl:variable name="birthYear">
+        <xsl:value-of select="substring($birthDate,1,4)"/>
+    </xsl:variable>
+	<xsl:variable name="birthMonth">
+        <xsl:value-of select="substring($birthDate,5,2)"/>
+    </xsl:variable>
+	<xsl:variable name="birthDay">
+        <xsl:value-of select="substring($birthDate,7,2)"/>
+    </xsl:variable>
+	
+	<xsl:variable name="studyDate">
+		<xsl:value-of select="substring(string(siemens/YAPS/tFrameOfReference),30,8)" />
+    </xsl:variable>  
+	<xsl:variable name="studyYear">
+        <xsl:value-of select="substring($studyDate,1,4)"/>
+    </xsl:variable>
+	<xsl:variable name="studyMonth">
+        <xsl:value-of select="substring($studyDate,5,2)"/>
+    </xsl:variable>
+	<xsl:variable name="studyDay">
+        <xsl:value-of select="substring($studyDate,7,2)"/>
+    </xsl:variable>
+	
+	<xsl:variable name="dateSeperator">-</xsl:variable>    
     <xsl:variable name="strSeperator">_</xsl:variable>
 
     <xsl:template match="/">
@@ -52,8 +108,7 @@
                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                 xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-            <!--
-            <subjectInformation>
+			<subjectInformation>
                 <patientName>
                     <xsl:value-of select="siemens/DICOM/tPatientName"/>
                 </patientName>
@@ -62,9 +117,13 @@
                         <xsl:value-of select="siemens/YAPS/flUsedPatientWeight"/>
                     </patientWeight_kg>
                 </xsl:if>
-                <patientID>
-                    <xsl:value-of select="siemens/IRIS/RECOMPOSE/PatientID"/>
-                </patientID>
+								
+				<patientID>
+					<xsl:value-of select="siemens/IRIS/RECOMPOSE/PatientID"/>
+				</patientID> 
+				<patientBirthdate>
+					<xsl:value-of select="concat($birthYear,$dateSeperator,$birthMonth,$dateSeperator,$birthDay)"/>
+				</patientBirthdate> 
                 <patientGender>
                     <xsl:choose>
                         <xsl:when test="siemens/DICOM/lPatientSex = 1">F</xsl:when>
@@ -73,14 +132,15 @@
                     </xsl:choose>
                 </patientGender>
             </subjectInformation>
-
-            <studyInformation>
-            <studyInstanceUID>
+			
+			<studyInformation>
+				<studyInstanceUID>
                     <xsl:value-of select="$studyID" />
                 </studyInstanceUID>
-
+				<studyDate>
+					<xsl:value-of select="concat($studyYear,$dateSeperator,$studyMonth,$dateSeperator,$studyDay)"/>
+				</studyDate>
             </studyInformation>
-            -->
 
             <measurementInformation>
                 <measurementID>
@@ -140,7 +200,7 @@
                 <receiverChannels>
                     <xsl:value-of select="siemens/YAPS/iMaxNoOfRxChannels" />
                 </receiverChannels>
-		
+
 		<!-- Coil Labels -->
 		<xsl:choose>
                   <!-- VD line with dual density -->
@@ -197,193 +257,105 @@
                     <xsl:value-of select="siemens/YAPS/alLarmorConstant"/>
                 </LarmorConstant_Hz_Per_T>
             </experimentalConditions>
+
             <encoding>
-                <trajectory>
+                <trajectory>epi</trajectory>
+                <trajectoryDescription>
+                    <identifier>ConventionalEPI</identifier>
+                    <userParameterLong>
+                        <name>etl</name>
+                        <value>
+                            <xsl:value-of select="siemens/MEAS/sFastImaging/lEPIFactor"/>
+                        </value>
+                    </userParameterLong>
+                    <userParameterLong>
+                        <name>numberOfNavigators</name>
+                        <value>3</value>
+                    </userParameterLong>
+                    <!-- Switch depending on ramp sampling -->
                     <xsl:choose>
-                        <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 1">cartesian</xsl:when>
-                        <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 2">radial</xsl:when>
-                        <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 4">spiral</xsl:when>
-                        <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 8">propellor</xsl:when>
-                        <xsl:otherwise>other</xsl:otherwise>
+                      <xsl:when test="siemens/YAPS/alRegridMode = 2">
+                        <!-- Ramp sampling is ON -->
+                        <userParameterLong>
+                          <name>rampUpTime</name>
+                          <value>
+                            <xsl:value-of select="siemens/YAPS/alRegridRampupTime"/>
+                          </value>
+                        </userParameterLong>
+                        <userParameterLong>
+                          <name>rampDownTime</name>
+                          <value>
+                            <xsl:value-of select="siemens/YAPS/alRegridRampdownTime"/>
+                          </value>
+                        </userParameterLong>
+                        <userParameterLong>
+                          <name>flatTopTime</name>
+                          <value>
+                            <xsl:value-of select="siemens/YAPS/alRegridFlattopTime"/>
+                          </value>
+                        </userParameterLong>
+                        <userParameterLong>
+                          <name>acqDelayTime</name>
+                          <value>
+                            <xsl:value-of select="siemens/YAPS/alRegridDelaySamplesTime"/>
+                          </value>
+                        </userParameterLong>
+                        <userParameterLong>
+                          <name>numSamples</name>
+                          <value>
+                            <xsl:value-of select="siemens/YAPS/alRegridDestSamples"/>
+                          </value>
+                        </userParameterLong>
+                      </xsl:when>
+                      <xsl:otherwise>
+                        <!-- Ramp sampling is OFF -->
+                        <userParameterLong>
+                          <name>numSamples</name>
+                          <value>
+                            <xsl:value-of select="siemens/YAPS/iNoOfFourierColumns"/>
+                          </value>
+                        </userParameterLong>
+                      </xsl:otherwise>
                     </xsl:choose>
-                </trajectory>
 
-                <xsl:if test="siemens/MEAS/sKSpace/ucTrajectory = 4">
-                    <trajectoryDescription>
-                        <identifier>HargreavesVDS2000</identifier>
-                        <userParameterLong>
-                            <name>interleaves</name>
-                            <value>
-                                <xsl:value-of select="siemens/MEAS/sKSpace/lRadialViews" />
-                            </value>
-                        </userParameterLong>
-                        <userParameterLong>
-                            <name>fov_coefficients</name>
-                            <value>1</value>
-                        </userParameterLong>
-                        <userParameterLong>
-                            <name>SamplingTime_ns</name>
-                            <value>
-                                <xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[57]" />
-                            </value>
-                        </userParameterLong>
-                        <userParameterDouble>
-                            <name>MaxGradient_G_per_cm</name>
-                            <value>
-                                <xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[7]" />
-                            </value>
-                        </userParameterDouble>
-                        <userParameterDouble>
-                            <name>MaxSlewRate_G_per_cm_per_s</name>
-                            <value>
-                                <xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[8]" />
-                            </value>
-                        </userParameterDouble>
-                        <userParameterDouble>
-                            <name>FOVCoeff_1_cm</name>
-                            <value>
-                                <xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[10]" />
-                            </value>
-                        </userParameterDouble>
-                        <userParameterDouble>
-                            <name>krmax_per_cm</name>
-                            <value>
-                                <xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[9]" />
-                            </value>
-                        </userParameterDouble>
-                        <comment>Using spiral design by Brian Hargreaves (http://mrsrl.stanford.edu/~brian/vdspiral/)</comment>
-                    </trajectoryDescription>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/alRegridRampupTime > 0">
-                    <xsl:if test="siemens/YAPS/alRegridRampdownTime > 0">
-                        <trajectoryDescription>
-                            <identifier>ConventionalEPI</identifier>
-                            <userParameterLong>
-                                <name>etl</name>
-                                <value>
-                                    <xsl:value-of select="siemens/MEAS/sFastImaging/lEPIFactor"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>numberOfNavigators</name>
-                                <value>3</value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>rampUpTime</name>
-                                <value>
-                                    <xsl:value-of select="siemens/YAPS/alRegridRampupTime"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>rampDownTime</name>
-                                <value>
-                                    <xsl:value-of select="siemens/YAPS/alRegridRampdownTime"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>flatTopTime</name>
-                                <value>
-                                    <xsl:value-of select="siemens/YAPS/alRegridFlattopTime"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>echoSpacing</name>
-                                <value>
-                                    <xsl:value-of select="siemens/YAPS/lEchoSpacing"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>acqDelayTime</name>
-                                <value>
-                                    <xsl:value-of select="siemens/YAPS/alRegridDelaySamplesTime"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterLong>
-                                <name>numSamples</name>
-                                <value>
-                                    <xsl:value-of select="siemens/YAPS/alRegridDestSamples"/>
-                                </value>
-                            </userParameterLong>
-                            <userParameterDouble>
-                                <name>dwellTime</name>
-                                <value>
-                                    <xsl:value-of select="siemens/MEAS/sRXSPEC/alDwellTime div 1000.0"/>
-                                </value>
-                            </userParameterDouble>
-                            <comment>Conventional 2D EPI sequence</comment>
-                        </trajectoryDescription>
-                    </xsl:if>
-                </xsl:if>
-
+                    <userParameterDouble>
+                        <name>dwellTime</name>
+                        <value>
+                            <xsl:value-of select="siemens/MEAS/sRXSPEC/alDwellTime div 1000.0"/>
+                        </value>
+                    </userParameterDouble>
+                    <comment>Conventional EPI sequence</comment>
+                </trajectoryDescription>
                 <encodedSpace>
                     <matrixSize>
+						<x>
+							<xsl:value-of select="siemens/MEAS/sKSpace/lBaseResolution * $readoutOversampling"/>
+						</x>
 
-                        <xsl:choose>
-                            <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 1">
-                                <x>
-                                    <xsl:value-of select="siemens/YAPS/iNoOfFourierColumns"/>
-                                </x>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <x>
-                                    <xsl:value-of select="siemens/IRIS/DERIVED/imageColumns"/>
-                                </x>
-                            </xsl:otherwise>
-                        </xsl:choose>
-
-                        <xsl:choose>
-                            <xsl:when test="siemens/MEAS/sKSpace/uc2DInterpolation" >
-                                <xsl:choose>
-                                    <xsl:when test="siemens/MEAS/sKSpace/uc2DInterpolation = 1">
-                                        <y>
-                                            <xsl:value-of select="floor(siemens/YAPS/iPEFTLength div 2)"/>
-                                        </y>
-                                    </xsl:when>
-                                    <xsl:otherwise>
-                                        <y>
-                                            <xsl:value-of select="siemens/YAPS/iPEFTLength"/>
-                                        </y>
-                                    </xsl:otherwise>
-                                </xsl:choose>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <y>
-                                    <xsl:value-of select="siemens/YAPS/iPEFTLength"/>
-                                </y>
-                            </xsl:otherwise>
-                        </xsl:choose>
-
-                        <xsl:choose>
-                            <xsl:when test="not(siemens/YAPS/iNoOfFourierPartitions) or (siemens/YAPS/i3DFTLength = 1)">
-                                <z>1</z>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <z>
-                                    <xsl:value-of select="siemens/YAPS/i3DFTLength"/>
-                                </z>
-                            </xsl:otherwise>
-                        </xsl:choose>
+						<y>
+							<xsl:value-of select="floor(siemens/YAPS/iNoOfFourierLines div $accelerationFactor1)"/>
+						</y>
+						
+						<xsl:choose>
+							<xsl:when test="not(siemens/YAPS/iNoOfFourierPartitions) or (siemens/YAPS/i3DFTLength = 1)">
+								<z>1</z>
+							</xsl:when>
+							<xsl:otherwise>
+								<z>
+									<xsl:value-of select="siemens/YAPS/i3DFTLength"/>
+								</z>
+							</xsl:otherwise>
+						</xsl:choose>
                     </matrixSize>
-
                     <fieldOfView_mm>
-                        <xsl:choose>
-                            <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 1">
-                                <x>
-                                    <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dReadoutFOV * siemens/YAPS/flReadoutOSFactor"/>
-                                </x>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <x>
-                                    <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dReadoutFOV"/>
-                                </x>
-                            </xsl:otherwise>
-                        </xsl:choose>
+                        <x>
+                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dReadoutFOV * $readoutOversampling"/>
+                        </x>
                         <y>
-                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dPhaseFOV * (1+$phaseOversampling)"/>
+                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dPhaseFOV * (1+$phaseOversampling) div $accelerationFactor1"/>
                         </y>
                         <z>
-                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dThickness * (1+$sliceOversampling)"/>
+                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dThickness * (1+$sliceOversampling) div $accelerationFactor2 "/>
                         </z>
                     </fieldOfView_mm>
                 </encodedSpace>
@@ -576,71 +548,107 @@
                         </maximum>
                         <center>0</center>
                     </average>
+					<user_0>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_0>
+					<user_1>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_1>
+					<user_2>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_2>
+					<user_3>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_3>
+					<user_4>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_4>
+					<user_5>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_5>
+					<user_6>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_6>
+					<user_7>
+						<minimum>0</minimum>
+						<maximum>0</maximum>
+						<center>0</center>
+					</user_7>
                 </encodingLimits>
-        <parallelImaging>
-          <accelerationFactor>
-                    <kspace_encoding_step_1>
-              <xsl:choose>
-            <xsl:when test="not(siemens/MEAS/sPat/lAccelFactPE)">1</xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="(siemens/MEAS/sPat/lAccelFactPE)"/>
-            </xsl:otherwise>
-              </xsl:choose>
-                    </kspace_encoding_step_1>
-                    <kspace_encoding_step_2>
-              <xsl:choose>
-            <xsl:when test="not(siemens/MEAS/sPat/lAccelFact3D)">1</xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="(siemens/MEAS/sPat/lAccelFact3D)"/>
-            </xsl:otherwise>
-              </xsl:choose>
-                    </kspace_encoding_step_2>
-          </accelerationFactor>
-          <calibrationMode>
-                    <xsl:choose>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 1">other</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 2">embedded</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 4">separate</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 8">separate</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">interleaved</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">interleaved</xsl:when>
-              <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">interleaved</xsl:when>
-              <xsl:otherwise>other</xsl:otherwise>
-                    </xsl:choose>
-          </calibrationMode>
-          <xsl:if test="(siemens/MEAS/sPat/ucRefScanMode = 1) or (siemens/MEAS/sPat/ucRefScanMode = 16) or (siemens/MEAS/sPat/ucRefScanMode = 32) or (siemens/MEAS/sPat/ucRefScanMode = 64)">
-                    <interleavingDimension>
-              <xsl:choose>
-            <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">average</xsl:when>
-            <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">repetition</xsl:when>
-            <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">phase</xsl:when>
-            <xsl:otherwise>other</xsl:otherwise>
-              </xsl:choose>
-                    </interleavingDimension>
-          </xsl:if>
-        </parallelImaging>
+                
+                <parallelImaging>
+                  <accelerationFactor>
+                            <kspace_encoding_step_1>
+                      <xsl:choose>
+                    <xsl:when test="not(siemens/MEAS/sPat/lAccelFactPE)">1</xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="(siemens/MEAS/sPat/lAccelFactPE)"/>
+                    </xsl:otherwise>
+                      </xsl:choose>
+                            </kspace_encoding_step_1>
+                            <kspace_encoding_step_2>
+                      <xsl:choose>
+                    <xsl:when test="not(siemens/MEAS/sPat/lAccelFact3D)">1</xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="(siemens/MEAS/sPat/lAccelFact3D)"/>
+                    </xsl:otherwise>
+                      </xsl:choose>
+                            </kspace_encoding_step_2>
+                  </accelerationFactor>
+                  <calibrationMode>
+                            <xsl:choose>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 1">other</xsl:when>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 2">embedded</xsl:when>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 4">separate</xsl:when>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 8">separate</xsl:when>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">interleaved</xsl:when>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">interleaved</xsl:when>
+                      <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">interleaved</xsl:when>
+                      <xsl:otherwise>other</xsl:otherwise>
+                            </xsl:choose>
+                  </calibrationMode>
+                  <xsl:if test="(siemens/MEAS/sPat/ucRefScanMode = 1) or (siemens/MEAS/sPat/ucRefScanMode = 16) or (siemens/MEAS/sPat/ucRefScanMode = 32) or (siemens/MEAS/sPat/ucRefScanMode = 64)">
+                            <interleavingDimension>
+                      <xsl:choose>
+                    <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 16">average</xsl:when>
+                    <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 32">repetition</xsl:when>
+                    <xsl:when test="siemens/MEAS/sPat/ucRefScanMode = 64">phase</xsl:when>
+                    <xsl:otherwise>other</xsl:otherwise>
+                      </xsl:choose>
+                            </interleavingDimension>
+                  </xsl:if>
+                </parallelImaging>
+				
+				<echoTrainLength>
+					<xsl:value-of select="ceiling(1.0 * siemens/YAPS/iNoOfFourierLines div $accelerationFactor1)"/>
+				</echoTrainLength>
+						
             </encoding>
 
             <sequenceParameters>
                 <xsl:for-each select="siemens/MEAS/alTR">
-                     <xsl:if test="position() = 1">
-                            <TR>
-                                <xsl:value-of select=". div 1000.0" />
-                            </TR>
-                    </xsl:if>
-                    <xsl:if test="(position() &gt; 1) and (. &gt; 0)">
+                    <xsl:if test=". &gt; 0">
                         <TR>
                             <xsl:value-of select=". div 1000.0" />
                         </TR>
                     </xsl:if>
                 </xsl:for-each>
                 <xsl:for-each select="siemens/MEAS/alTE">
-                     <xsl:if test="position() = 1">
-                            <TE>
-                                <xsl:value-of select=". div 1000.0" />
-                            </TE>
-                    </xsl:if>
-                    <xsl:if test="(position() &gt; 1) and (. &gt; 0)">
+                    <xsl:if test=". &gt; 0">
                         <xsl:if test="position() &lt; ($numberOfContrasts + 1)">
                             <TE>
                                 <xsl:value-of select=". div 1000.0" />
@@ -648,15 +656,13 @@
                         </xsl:if>
                     </xsl:if>
                 </xsl:for-each>
-                <xsl:for-each select="siemens/MEAS/sWipMemBlock/alFree">
-                    <xsl:if test=". &gt; 50">
-                        <xsl:if test=". &lt; 2000">
-                            <TI>
-                                <xsl:value-of select=". div 1000.0" />
-                            </TI>
-                        </xsl:if>
+                <xsl:for-each select="siemens/MEAS/alTI">
+                    <xsl:if test=". &gt; 0">
+                        <TI>
+                            <xsl:value-of select=". div 1000.0" />
+                        </TI>
                     </xsl:if>
-                </xsl:for-each> 
+                </xsl:for-each>
                 <xsl:for-each select="siemens/DICOM/adFlipAngleDegree">
                 <xsl:if test=". &gt; 0">
                         <flipAngle_deg>
@@ -688,108 +694,252 @@
                     </echo_spacing>
                 </xsl:if>
             </sequenceParameters>
+			
+			
+			<userParameters>
+			
+					<!-- Decide whether the converter should undo field-of-view shifts. 
+						 The undoing of FoVShift by the converter is suboptimal because of clock-shifts.
+						 The FoV shift should be disabled on the scanner.
+					     By default, the converter does not change the raw data -->
+					<userParameterLong>
+						<name>undoFieldOfViewShifts</name>
+						<value>
+							<xsl:value-of select="0"/>
+						</value>
+					</userParameterLong>
+					
+					<!-- Trig to ADC time: imaging scans -->
+					<userParameterDouble>
+						<name>triggerToAcquisitionDelay</name>
+						<value>
+							<xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[5] div 1000.0"/>
+						</value>
+					</userParameterDouble>
+					
+					<!-- Trig to ADC time: phase correction scans -->
+					<userParameterDouble>
+						<name>triggerToAcquisitionDelayPhaseCorrection</name>
+						<value>
+							<xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[4] div 1000.0"/>
+						</value>
+					</userParameterDouble>						
 
-            <userParameters>
-                <xsl:if test="siemens/MEAS/sAngio/sFlowArray/lSize">
-                    <userParameterLong>
-                        <name>VENC_0</name>
-                        <value>
-                            <xsl:value-of select="siemens/MEAS/sAngio/sFlowArray/asElm/s0/nVelocity" />
-                        </value>
-                    </userParameterLong>
-                </xsl:if>
+					<!-- Suggested minimal TR for skope monitoring system -->
+					<userParameterDouble>
+						<name>skopeMinimalTR</name>
+						<value>
+							<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[1]"/>
+						</value>
+					</userParameterDouble>
 
-                <xsl:if test="not(siemens/MEAS/sPhysioImaging/lSignal1 = 1) and not(siemens/MEAS/sPhysioImaging/lSignal1 = 16) and (siemens/MEAS/sPhysioImaging/lMethod1 = 8)">
-                    <xsl:if test="siemens/MEAS/sFastImaging/lShots >=1">
-                        <xsl:if test="siemens/MEAS/sPhysioImaging/lPhases > 1">
-                            <xsl:if test="siemens/MEAS/sPhysioImaging/lRetroGatedImages > 0">
-                                <userParameterLong>
-                                    <name>RetroGatedImages</name>
-                                    <value>
-                                        <xsl:value-of select="siemens/MEAS/sPhysioImaging/lRetroGatedImages" />
-                                    </value>
-                                </userParameterLong>
+					<!-- Suggested interleave TR for skope monitoring system -->
+					<userParameterDouble>
+						<name>skopeInterleaveTR</name>
+						<value>
+							<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[2]"/>
+						</value>
+					</userParameterDouble>
 
-                                <userParameterLong>
-                                    <name>RetroGatedSegmentSize</name>
-                                    <value>
-                                        <xsl:choose>
-                                            <xsl:when test="siemens/MEAS/sFastImaging/lSegments">
-                                                <xsl:value-of select="siemens/MEAS/sFastImaging/lSegments"/>
-                                            </xsl:when>
-                                            <xsl:otherwise>0</xsl:otherwise>
-                                        </xsl:choose>
-                                    </value>
-                                </userParameterLong>
-                            </xsl:if>
-                        </xsl:if>
-                    </xsl:if>
-                </xsl:if>
+					<!-- Suggested skope field probe acquisition duration -->
+					<userParameterDouble>
+						<name>skopeAqDur</name>
+						<value>
+							<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[3]"/>
+						</value>
+					</userParameterDouble>
 
-                <xsl:if test="siemens/MEAS/sPat/lRefLinesPE">
-                    <userParameterLong>
-                        <name>EmbeddedRefLinesE1</name>
-                        <value>
-                            <xsl:value-of select="siemens/MEAS/sPat/lRefLinesPE" />
-                        </value>
-                    </userParameterLong>
-                </xsl:if>
+					<!-- Gradient free interval for field probe excitation -->
+					<userParameterDouble>
+						<name>skopeGradientFreeInterval</name>
+						<value>
+							<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[4]"/>
+						</value>
+					</userParameterDouble>
+					
+										<!-- ECC  -->
+					<!-- B0 compensation amplitude X -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Amp_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Amp_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Amp_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflAmplitude[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<!-- B0 compensation amplitude Y -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Amp_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Amp_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Amp_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflAmplitude[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<!-- B0 compensation amplitude Z -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Amp_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Amp_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Amp_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflAmplitude[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>				
+					
+					<!-- B0 compensation constant X -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Tau_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Tau_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationX_Tau_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationX/aflTimeConstant[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
 
-                <xsl:if test="siemens/MEAS/sPat/lRefLines3D">
-                    <userParameterLong>
-                        <name>EmbeddedRefLinesE2</name>
-                        <value>
-                            <xsl:value-of select="siemens/MEAS/sPat/lRefLines3D" />
-                        </value>
-                    </userParameterLong>
-                </xsl:if>
-
-                <xsl:if test="siemens/MEAS/lProtonDensMap">
-                    <userParameterLong>
-                        <name>NumOfProtonDensityImages</name>
-                        <value>
-                            <xsl:value-of select="siemens/MEAS/lProtonDensMap" />
-                        </value>
-                    </userParameterLong>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[1]">
-                  <userParameterDouble>
-                      <name>MaxwellCoefficient_0</name>
-                      <value>
-                          <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[1]" />
-                      </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[3]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_1</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[2]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[3]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_2</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[3]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-                <xsl:if test="siemens/YAPS/aflMaxwellCoefficients[4]">
-                  <userParameterDouble>
-                    <name>MaxwellCoefficient_3</name>
-                    <value>
-                        <xsl:value-of select="siemens/YAPS/aflMaxwellCoefficients[4]" />
-                    </value>
-                  </userParameterDouble>
-                </xsl:if>
-
-            </userParameters>
+					<!-- B0 compensation constant Y -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Tau_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Tau_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationY_Tau_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationY/aflTimeConstant[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<!-- B0 compensation constant Z -->
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[1]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Tau_0</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[1]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[2]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Tau_1</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[2]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					
+					
+					<xsl:if test="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[3]">
+					  <userParameterDouble>
+						  <name>sB0CompensationZ_Tau_2</name>
+						  <value>
+							  <xsl:value-of select="siemens/MEAS/sGRADSPEC/sB0CompensationZ/aflTimeConstant[3]" />
+						  </value>
+					  </userParameterDouble>
+					</xsl:if>
+					<!-- ECC end -->
+					
+					
+			</userParameters>
+					
 
         </ismrmrdHeader>
     </xsl:template>
