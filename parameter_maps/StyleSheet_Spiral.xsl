@@ -277,87 +277,30 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
             </experimentalConditions>
 
             <encoding>
-                <trajectory>epi</trajectory>
+                <trajectory>spiral</trajectory>
                 <trajectoryDescription>
-                    <identifier>ConventionalEPI</identifier>
-                    <userParameterLong>
-                        <name>etl</name>
-                        <value>
-                            <xsl:value-of select="siemens/MEAS/sFastImaging/lEPIFactor"/>
-                        </value>
-                    </userParameterLong>
-                    <userParameterLong>
-                        <name>numberOfNavigators</name>
-                        <value>3</value>
-                    </userParameterLong>
-					<userParameterLong>
-                        <name>regridMode</name>
-                        <value>
-						 <xsl:value-of select="siemens/YAPS/alRegridMode"/>
-						</value>
-                    </userParameterLong>
-                    <!-- Switch depending on ramp sampling -->
-                    <xsl:choose>
-                      <xsl:when test="siemens/YAPS/alRegridMode = 2 or siemens/YAPS/alRegridMode = 4">
-                        <!-- Ramp sampling is ON -->
-                        <userParameterLong>
-                          <name>rampUpTime</name>
-                          <value>
-                            <xsl:value-of select="siemens/YAPS/alRegridRampupTime"/>
-                          </value>
-                        </userParameterLong>
-                        <userParameterLong>
-                          <name>rampDownTime</name>
-                          <value>
-                            <xsl:value-of select="siemens/YAPS/alRegridRampdownTime"/>
-                          </value>
-                        </userParameterLong>
-                        <userParameterLong>
-                          <name>flatTopTime</name>
-                          <value>
-                            <xsl:value-of select="siemens/YAPS/alRegridFlattopTime"/>
-                          </value>
-                        </userParameterLong>
-                        <userParameterLong>
-                          <name>acqDelayTime</name>
-                          <value>
-                            <xsl:value-of select="siemens/YAPS/alRegridDelaySamplesTime"/>
-                          </value>
-                        </userParameterLong>
-                        <userParameterLong>
-                          <name>numSamples</name>
-                          <value>
-                            <xsl:value-of select="siemens/YAPS/alRegridDestSamples"/>
-                          </value>
-                        </userParameterLong>
-                      </xsl:when>
-                      <xsl:otherwise>
-                        <!-- Ramp sampling is OFF -->
-                        <userParameterLong>
-                          <name>numSamples</name>
-                          <value>
-                            <xsl:value-of select="siemens/YAPS/iNoOfFourierColumns"/>
-                          </value>
-                        </userParameterLong>
-                      </xsl:otherwise>
-                    </xsl:choose>
-
+                    <identifier>spiral</identifier>				
+				
+					
                     <userParameterDouble>
                         <name>dwellTime</name>
                         <value>
                             <xsl:value-of select="siemens/MEAS/sRXSPEC/alDwellTime div 1000.0"/>
                         </value>
                     </userParameterDouble>
-                    <comment>Conventional EPI sequence</comment>
+										
+                    <comment>Spiral sequence</comment>
                 </trajectoryDescription>
+				
+				<!--Hardcoded in sequence  -->
+				<echoTrainLength>10</echoTrainLength>
+				
                 <encodedSpace>
                     <matrixSize>
-						<x>
-							<xsl:value-of select="siemens/MEAS/sKSpace/lBaseResolution * $readoutOversampling"/>
-						</x>
-
+						<!--Hardcoded value in sequence-->
+						<x>2000</x>
 						<y>
-							<xsl:value-of select="floor(siemens/YAPS/iNoOfFourierLines div $accelerationFactor1)"/>
+							<xsl:value-of select="floor(siemens/YAPS/iNoOfFourierLines div siemens/YAPS/GradientEchoTrainLength)"/>
 						</y>
 						
 						<xsl:choose>
@@ -418,62 +361,14 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     <kspace_encoding_step_1>
                         <minimum>0</minimum>
                         <maximum>
-                            <xsl:value-of select="siemens/YAPS/iNoOfFourierLines - 1"/>
+                            <xsl:value-of select="floor(siemens/YAPS/iNoOfFourierLines div siemens/YAPS/GradientEchoTrainLength) - 1"/>
                         </maximum>
-                        <center>
-                            <xsl:value-of select="floor(siemens/MEAS/sKSpace/lPhaseEncodingLines div 2)"/>
-                        </center>
+                        <center>0</center>
                     </kspace_encoding_step_1>
                     <kspace_encoding_step_2>
                         <minimum>0</minimum>
-                        <xsl:choose>
-                            <xsl:when test="not(siemens/YAPS/iNoOfFourierPartitions) or (siemens/YAPS/i3DFTLength = 1)">
-                                <maximum>0</maximum>
-                                <center>0</center>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <maximum>
-                                    <xsl:value-of select="siemens/YAPS/iNoOfFourierPartitions - 1"/>
-                                </maximum>
-                                <xsl:choose>
-                                    <xsl:when test="siemens/MEAS/sKSpace/ucTrajectory = 1">
-                                        <xsl:choose>
-                                            <xsl:when test="siemens/MEAS/sPat/lAccelFact3D">
-                                                <xsl:choose>
-                                                    <xsl:when test="not(siemens/MEAS/sPat/lAccelFact3D) > 1">
-                                                        <center>
-                                                            <xsl:value-of select="floor(siemens/MEAS/sKSpace/lPartitions div 2) - (siemens/YAPS/lPartitions - siemens/YAPS/iNoOfFourierPartitions)"/>
-                                                        </center>
-                                                    </xsl:when>
-                                                    <xsl:otherwise>
-                                                        <xsl:choose>
-                                                            <xsl:when test="(siemens/MEAS/sKSpace/lPartitions - siemens/YAPS/iNoOfFourierPartitions) > siemens/MEAS/sPat/lAccelFact3D">
-                                                                <center>
-                                                                    <xsl:value-of select="floor(siemens/MEAS/sKSpace/lPartitions div 2) - (siemens/MEAS/sKSpace/lPartitions - siemens/YAPS/iNoOfFourierPartitions)"/>
-                                                                </center>
-                                                            </xsl:when>
-                                                            <xsl:otherwise>
-                                                                <center>
-                                                                    <xsl:value-of select="floor(siemens/MEAS/sKSpace/lPartitions div 2)"/>
-                                                                </center>
-                                                            </xsl:otherwise>
-                                                        </xsl:choose>
-                                                    </xsl:otherwise>
-                                                </xsl:choose>
-                                            </xsl:when>
-                                            <xsl:otherwise>
-                                                <center>
-                                                    <xsl:value-of select="floor(siemens/MEAS/sKSpace/lPartitions div 2) - (siemens/MEAS/sKSpace/lPartitions - siemens/YAPS/iNoOfFourierPartitions)"/>
-                                                </center>
-                                            </xsl:otherwise>
-                                        </xsl:choose>
-                                    </xsl:when>
-                                    <xsl:otherwise>
-                                        <center>0</center>
-                                    </xsl:otherwise>
-                                </xsl:choose>
-                            </xsl:otherwise>
-                        </xsl:choose>
+						<maximum>0</maximum>
+						<center>0</center>
                     </kspace_encoding_step_2>
                     <slice>
                         <minimum>0</minimum>
@@ -520,32 +415,8 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     </repetition>
                     <segment>
                         <minimum>0</minimum>
-                        <maximum>
-                            <xsl:choose>
-                                <xsl:when test="siemens/MEAS/sFastImaging/ucSegmentationMode" >
-                                    <xsl:choose>
-                                        <xsl:when test="siemens/MEAS/sFastImaging/ucSegmentationMode = 2">
-                                            <xsl:choose>
-                                                <xsl:when test="siemens/MEAS/sFastImaging/lShots">
-                                                    <xsl:value-of select="siemens/MEAS/sFastImaging/lShots - 1"/>
-                                                </xsl:when>
-                                                <xsl:otherwise>0</xsl:otherwise>
-                                            </xsl:choose>
-                                        </xsl:when>
-                                        <xsl:when test="siemens/MEAS/sFastImaging/ucSegmentationMode = 1">
-                                            <xsl:choose>
-                                                <xsl:when test="siemens/MEAS/sFastImaging/lSegments &gt; 1">
-                                                    <xsl:value-of select="ceiling((siemens/YAPS/iNoOfFourierPartitions * siemens/YAPS/iNoOfFourierLines) div siemens/MEAS/sFastImaging/lSegments)"/>
-                                                </xsl:when>
-                                                <xsl:otherwise>0</xsl:otherwise>
-                                            </xsl:choose>
-                                        </xsl:when>
-                                        <xsl:otherwise>0</xsl:otherwise>
-                                    </xsl:choose>
-                                </xsl:when>
-                                <xsl:otherwise>0</xsl:otherwise>
-                            </xsl:choose>
-                        </maximum>
+						<!--Hardcoded value in sequence-->
+                        <maximum>9</maximum>
                         <center>0</center>
                     </segment>
                     <contrast>
@@ -657,9 +528,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                   </xsl:if>
                 </parallelImaging>
 				
-				<echoTrainLength>
-					<xsl:value-of select="ceiling(1.0 * siemens/YAPS/iNoOfFourierLines div $accelerationFactor1)"/>
-				</echoTrainLength>
+			
 						
             </encoding>
 
@@ -694,48 +563,35 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                         </flipAngle_deg>
                     </xsl:if>
                 </xsl:for-each>
-                <xsl:choose>
-					<xsl:when test="siemens/MEAS/ucSequenceType">
-						<sequence_type>
-							<xsl:choose>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 1">Flash</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 2">SSFP</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 4">EPI</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 8">TurboSpinEcho</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 16">ChemicalShiftImaging</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 32">FID</xsl:when>
-								<xsl:otherwise>Unknown</xsl:otherwise>
-							</xsl:choose>
-						</sequence_type>
-					</xsl:when>
-					<xsl:otherwise>
-						<sequence_type>Unknown</sequence_type>
-					</xsl:otherwise>
-				</xsl:choose>
+                <sequence_type>SE</sequence_type>
                 <xsl:if test="siemens/YAPS/lEchoSpacing">
                     <echo_spacing>
-                        <xsl:value-of select="siemens/YAPS/lEchoSpacing div 1000.0" />
+                        <!--Hardcoded value in sequence and rounded to gradient raster time-->
+                            <xsl:value-of select="ceiling(siemens/MEAS/sRXSPEC/alDwellTime div 1000.0 * 2000 div 10)*10 div 1000"/>
                     </echo_spacing>
                 </xsl:if>
             </sequenceParameters>
 			
 			
 			<userParameters>
-						<!-- Trig to ADC time: imaging scans -->
-					<userParameterDouble>
-						<name>triggerToAcquisitionDelay</name>
+					<!-- Decide whether the converter should undo field-of-view shifts. 
+						 The undoing of FoVShift by the converter is suboptimal because of clock-shifts.
+						 The FoV shift should be disabled on the scanner.
+					     By default, the converter does not change the raw data -->
+					<userParameterLong>
+						<name>undoFieldOfViewShifts</name>
 						<value>
-							<xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[5] div 1000.0"/>
+							<xsl:value-of select="0"/>
 						</value>
-					</userParameterDouble>
+					</userParameterLong>
 					
-					<!-- Trig to ADC time: phase correction scans -->
+					<!-- Trig to ADC time: imaging scans -->
 					<userParameterDouble>
-						<name>triggerToAcquisitionDelayPhaseCorrection</name>
-						<value>
-							<xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[4] div 1000.0"/>
-						</value>
-					</userParameterDouble>						
+					    <!--Hardcoded value in sequence-->
+						<name>triggerToAcquisitionDelay</name>
+						<value>0.200</value>
+					</userParameterDouble>
+								
 
 					<!-- Suggested minimal TR for skope monitoring system -->
 					<userParameterDouble>
@@ -756,17 +612,14 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 					<!-- Suggested skope field probe acquisition duration -->
 					<userParameterDouble>
 						<name>skopeAqDur</name>
-						<value>
-							<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[3]"/>
-						</value>
+						<!--Hardcoded value in sequence-->
+						<value>32</value>
 					</userParameterDouble>
 
 					<!-- Gradient free interval for field probe excitation -->
 					<userParameterDouble>
 						<name>skopeGradientFreeInterval</name>
-						<value>
-							<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[4]"/>
-						</value>
+						<value>0.000200</value>
 					</userParameterDouble>
 					
 					

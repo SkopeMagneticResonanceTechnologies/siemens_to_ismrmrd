@@ -621,8 +621,8 @@ int main(int argc, char *argv[] )
         // If the user did not specify any stylesheet
         if (usermap_xsl.length() == 0)
         {
-            parammap_xsl_content = load_embedded("IsmrmrdParameterMap_Siemens.xsl");
-            std::cout << "Parameter XSL stylesheet is: IsmrmrdParameterMap_Siemens.xsl" << std::endl;
+            parammap_xsl_content = load_embedded("StyleSheet_Default.xsl");
+            std::cout << "Parameter XSL stylesheet is: StyleSheet_Default.xsl" << std::endl;
         }
             // If the user specified only a user-supplied stylesheet
         else
@@ -1336,6 +1336,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 	 }
 	 
+
 	 // Frequency and phase of ADC
 	 float fFrequency = ((float)(LarmorConstant_Hz_Per_T)*sliceShift_prs[1] * dAmplRO*1.0e-3 + 0.5); // in Hz
 	 float fPhase = -fFrequency * 360.0*1.0e-6*dADCDuration*scanhead.ushKSpaceCentreColumn / scanhead.ushSamplesInScan; // in deg
@@ -1354,6 +1355,22 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 	 double dClockShiftCorrPhase = dClockFreq_Hz * (dLinDelay * 1e-6 * dTos_us + dConstDelay) * 360.0;
 	 fPhase -= dClockShiftCorrPhase;
 
+	 
+	 bool bUndoFoVShifts = false;
+	 {
+		 // Check if style sheet defines parameter 
+		 std::vector<ISMRMRD::UserParameterLong> vUserParam = header.userParameters.get().userParameterLong;
+
+		 for (int cParam = 0; cParam < vUserParam.size(); cParam++) {
+
+			 std::string name = vUserParam.at(cParam).name;
+			 long value = vUserParam.at(cParam).value;
+
+			 if (name.compare("undoFieldOfViewShifts") == 0) {
+				 bUndoFoVShifts = value;
+			 }
+		 }
+	 }
 	
     for (unsigned int c = 0; c < ismrmrd_acq.active_channels(); c++)
     {
@@ -1365,37 +1382,34 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 
 		// Undo FoV shifts
-		if (ismrmrd_acq.isFlagSet(ISMRMRD::ISMRMRD_ACQ_IS_REVERSE)) {
+		if (bUndoFoVShifts) {
+			if (ismrmrd_acq.isFlagSet(ISMRMRD::ISMRMRD_ACQ_IS_REVERSE)) {
 
-			float phi_p_inc = -fPhase + fdeltaPE * lLinNoCenterZero;
+				float phi_p_inc = -fPhase + fdeltaPE * lLinNoCenterZero;
 
 
-			for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {
+				for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {
 
-				float phi = phi_p_inc - 360.0*fFrequency*dwell_time_0*1.0e-9*float(s);
+					float phi = phi_p_inc - 360.0*fFrequency*dwell_time_0*1.0e-9*float(s);
 
-				phi = phi * M_PI / 180.0;
+					phi = phi * M_PI / 180.0;
 
-				// No FoV shifts are applied by the scanner for spirals. No need to undo them.
-				if (header.encoding.at(0).trajectory != ISMRMRD::TrajectoryType::SPIRAL) {
 					data[s] *= std::polar(1.0f, phi);
 				}
 			}
-		}
-		else {
-			float phi_p_inc = fPhase + fdeltaPE * lLinNoCenterZero;
-			//if (c == 0)
-			//	std::cout << " phi_p_inc normal : " << phi_p_inc;
+			else {
+				float phi_p_inc = fPhase + fdeltaPE * lLinNoCenterZero;
+				//if (c == 0)
+				//	std::cout << " phi_p_inc normal : " << phi_p_inc;
 
-			for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {
+				for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {
 
-				float phi = phi_p_inc + 360.0*fFrequency*dwell_time_0*1.0e-9*float(s);
+					float phi = phi_p_inc + 360.0*fFrequency*dwell_time_0*1.0e-9*float(s);
 
-				phi = phi * M_PI / 180.0;
+					phi = phi * M_PI / 180.0;
 
-				// No FoV shifts are applied by the scanner for spirals. No need to undo them.
-				if (header.encoding.at(0).trajectory != ISMRMRD::TrajectoryType::SPIRAL) {
 					data[s] *= std::polar(1.0f, phi);
+					
 				}
 			}
 		}
@@ -2276,8 +2290,8 @@ std::string getparammap_file_content(const std::string &parammap_file, const std
             // If the user did not specify any parameter map file
             if (usermap_file.length() == 0)
             {
-                parammap_file_content = load_embedded("IsmrmrdParameterMap_Siemens_VB17.xml");
-                std::cout << "Parameter map file is: IsmrmrdParameterMap_Siemens_VB17.xml" << std::endl;
+                parammap_file_content = load_embedded("IsmrmrdParameterMap_VB17.xml");
+                std::cout << "Parameter map file is: IsmrmrdParameterMap_VB17.xml" << std::endl;
             }
                 // If the user specified only a user-supplied parameter map file
             else
@@ -2319,8 +2333,8 @@ std::string getparammap_file_content(const std::string &parammap_file, const std
             // If the user did not specify any parameter map file
             if (usermap_file.length() == 0)
             {
-                parammap_file_content = load_embedded("IsmrmrdParameterMap_Siemens.xml");
-                std::cout << "Parameter map file is: IsmrmrdParameterMap_Siemens.xml" << std::endl;
+                parammap_file_content = load_embedded("IsmrmrdParameterMap_VD_VE.xml");
+                std::cout << "Parameter map file is: IsmrmrdParameterMap_VD_VE.xml" << std::endl;
             }
                 // If the user specified only a user-supplied parameter map file
             else
