@@ -1257,7 +1257,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 		 if (name.compare("readOutMode") == 0) {
 			 lReadOutMode = value;
-		 }
+		 } 
 	 }
 
 	 if (lReadOutMode == 2) { // Bipolar readout mode
@@ -1358,7 +1358,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 	 
 	 bool bUndoFoVShifts = false;
 	 {
-		 // Check if style sheet defines parameter 
+		 // Check if style sheet defines this parameter 
 		 std::vector<ISMRMRD::UserParameterLong> vUserParam = header.userParameters.get().userParameterLong;
 
 		 for (int cParam = 0; cParam < vUserParam.size(); cParam++) {
