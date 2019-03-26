@@ -376,10 +376,10 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                             <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dReadoutFOV * $readoutOversampling"/>
                         </x>
                         <y>
-                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dPhaseFOV * (1+$phaseOversampling)"/>
+                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dPhaseFOV * (1+$phaseOversampling) div $accelerationFactor1"/>
                         </y>
                         <z>
-                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dThickness * (1+$sliceOversampling)"/>
+                            <xsl:value-of select="siemens/MEAS/sSliceArray/asSlice/s0/dThickness * (1+$sliceOversampling) div $accelerationFactor2"/>
                         </z>
                     </fieldOfView_mm>
                 </encodedSpace>
