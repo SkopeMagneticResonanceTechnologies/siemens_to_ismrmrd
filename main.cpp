@@ -42,7 +42,9 @@ using boost::locale::conv::utf_to_utf;
 #include <utility>
 #include <typeinfo>
 
+#include <fftw3.h>
 
+static fftw_plan plan;
 
 const size_t MYSTERY_BYTES_EXPECTED = 160;
 
