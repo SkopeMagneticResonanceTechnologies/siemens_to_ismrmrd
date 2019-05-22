@@ -45,6 +45,8 @@ using boost::locale::conv::utf_to_utf;
 
 #include "eccc/SeqSim.h"  
 
+SEQSIM::DSP dsp;
+
 
 const size_t MYSTERY_BYTES_EXPECTED = 160;
 
@@ -808,10 +810,8 @@ int main(int argc, char *argv[] )
 
 
 	//---------------------------------------------------------------------
-	// Create DSP object
+	// Set DSP object
 	//---------------------------------------------------------------------
-	SEQSIM::DSP dsp;
-	
 	if (dsp_file.length() != 0)
 	{
 		std::cout << "Using the following DSP file: "<< dsp_file << std::endl;
@@ -1482,8 +1482,9 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 				}
 			}
 		}
+
 		// Undo B0 eddy current correction
-		//dsp.applyPhaseModulation(data, ismrmrd_acq.number_of_samples(), scanhead.ulScanCounter - 1); // ulScanCounter starts at 1.
+		dsp.applyPhaseModulation(data, ismrmrd_acq.number_of_samples(), scanhead.ulScanCounter - 1); // ulScanCounter starts at 1 but we want to stick to the C++ convention.
     }
 
 
