@@ -42,9 +42,9 @@ using boost::locale::conv::utf_to_utf;
 #include <utility>
 #include <typeinfo>
 
-#include <fftw3.h>
 
-static fftw_plan plan;
+#include "eccc/SeqSim.h"  
+
 
 const size_t MYSTERY_BYTES_EXPECTED = 160;
 
@@ -474,6 +474,8 @@ int main(int argc, char *argv[] )
     std::string usermap_file;
     std::string usermap_xsl;
 
+	std::string dsp_file;
+
     std::string schema_file_name;
 
     std::string ismrmrd_file;
@@ -500,6 +502,7 @@ int main(int argc, char *argv[] )
             ("file,f",                  po::value<std::string>(&siemens_dat_filename), "<SIEMENS dat file>")
             ("measNum,z",               po::value<unsigned int>(&measurement_number)->default_value(1), "<Measurement number>")
 			("pMap,m",                  po::value<std::string>(&parammap_file), "<Parameter map XML file>")
+			("dsp,d",					po::value<std::string>(&dsp_file), "<DSP file>")
             ("pMapStyle,x",             po::value<std::string>(&parammap_xsl), "<Parameter stylesheet XSL file>")
             ("user-map",                po::value<std::string>(&usermap_file), "<Provide a parameter map XML file>")
             ("user-stylesheet",         po::value<std::string>(&usermap_xsl), "<Provide a parameter stylesheet XSL file>")
@@ -522,6 +525,7 @@ int main(int argc, char *argv[] )
             ("file,f",                  "<SIEMENS dat file>")
             ("measNum,z",               "<Measurement number>")
             ("pMap,m",                  "<Parameter map XML>")
+			("dsp,d",					"<DSP file>")
             ("pMapStyle,x",             "<Parameter stylesheet XSL>")
             ("user-map",                "<Provide a parameter map XML file>")
             ("user-stylesheet",         "<Provide a parameter stylesheet XSL file>")
@@ -798,6 +802,69 @@ int main(int argc, char *argv[] )
 	if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
 		ignore_Segments = true;
 	} 
+
+
+
+
+
+	//---------------------------------------------------------------------
+	// Create DSP object
+	//---------------------------------------------------------------------
+	SEQSIM::DSP dsp;
+	
+	if (dsp_file.length() != 0)
+	{
+		std::cout << "Using the following DSP file: "<< dsp_file << std::endl;
+		dsp.setFileName(dsp_file.c_str());
+
+		dsp.setOutputMode(SEQSIM::OutputMode::INTERPOLATED_TO_RX);
+		dsp.setDataType(SEQSIM::DataType::EDDYPHASE);
+
+		SEQSIM::ECC_Coeff sCoeffX;
+		SEQSIM::ECC_Coeff sCoeffY;
+		SEQSIM::ECC_Coeff sCoeffZ;		
+
+		// X coeffs
+		sCoeffX.vfAmp.resize(3);
+		sCoeffX.vfAmp.at(0) = 0.1134;
+		sCoeffX.vfAmp.at(1) = -0.0790;
+		sCoeffX.vfAmp.at(2) = 0.1607;
+
+		sCoeffX.vfTau.resize(3);
+		sCoeffX.vfTau.at(0) = 0.3603;
+		sCoeffX.vfTau.at(1) = 0.0057;
+		sCoeffX.vfTau.at(2) = 0.0020;
+
+		// Y coeffs	
+		sCoeffY.vfAmp.resize(3);
+		sCoeffY.vfAmp.at(0) = 0.0076;
+		sCoeffY.vfAmp.at(1) = -0.0891;
+		sCoeffY.vfAmp.at(2) = 0.0083;
+
+		sCoeffY.vfTau.resize(3);
+		sCoeffY.vfTau.at(0) = 1.9998;
+		sCoeffY.vfTau.at(1) = 0.1491;
+		sCoeffY.vfTau.at(2) = 0.0020;
+
+		// Z coeffs
+		sCoeffZ.vfAmp.resize(3);
+		sCoeffZ.vfAmp.at(0) = 0.2548;
+		sCoeffZ.vfAmp.at(1) = 0.1812;
+		sCoeffZ.vfAmp.at(2) = -0.0143;
+
+		sCoeffZ.vfTau.resize(3);
+		sCoeffZ.vfTau.at(0) = 0.5425;
+		sCoeffZ.vfTau.at(1) = 0.1226;
+		sCoeffZ.vfTau.at(2) = 0.0017;
+
+		// Set coefficients
+		dsp.setB0CorrCoeff(sCoeffX, sCoeffY, sCoeffZ);
+
+		dsp.setVerboseMode(SEQSIM::DISPLAY_BASIC);
+		
+		dsp.run();
+
+	}
 
 
     auto ismrmrd_dataset = boost::make_shared<ISMRMRD::Dataset>(ismrmrd_file.c_str(), ismrmrd_group.c_str(), true);

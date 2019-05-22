@@ -77,7 +77,7 @@ set(Boost_NO_BOOST_CMAKE ON)
 find_package(Boost COMPONENTS system thread program_options filesystem timer REQUIRED)
 find_package(ISMRMRD REQUIRED)
 find_package(HDF5 1.8 REQUIRED COMPONENTS C)
-find_package(FFTW3 COMPONENTS single)
+find_package(FFTW3 COMPONENTS double)
 
 include_directories( ${ISMRMRD_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR} ${FFTW3_INCLUDE_DIR})
 link_directories( ${ISMRMRD_LIB_DIR} )
@@ -133,12 +133,18 @@ add_executable(siemens_to_ismrmrd
                ${schema_files}
                )
 
-target_link_libraries(siemens_to_ismrmrd ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIES})
+target_link_libraries(siemens_to_ismrmrd 	${LIBXSLT_LIBRARIES} 
+											${LIBXML2_LIBRARIES} 
+											${FFTW3_LIBRARIES} 
+											${ISMRMRD_LIBRARIES} 
+											${Boost_LIBRARIES}
+					  )
 
-target_link_libraries(siemens_to_ismrmrd
-                        ${ISMRMRD_LIBRARIES}
-                        ${Boost_LIBRARIES} )
 
+						
+						
+message ("FFTW3_LIBRARIES: " ${FFTW3_LIBRARIES})
+				
 install(TARGETS siemens_to_ismrmrd DESTINATION bin)
 
 # install the cmake modules
