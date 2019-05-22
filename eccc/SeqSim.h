@@ -235,7 +235,7 @@ namespace SEQSIM
 									vector<double> &vfCoeffYamp, vector<double> &vfCoeffYtau,
 									vector<double> &vfCoeffZamp, vector<double> &vfCoeffZtau);
 
-		void applyPhaseModulation(complex<double> *data, unsigned short numberOfSamples, unsigned int ulScanCounter);
+		void applyPhaseModulation(complex<float> *data, unsigned short numberOfSamples, unsigned int ulScanCounter);
 
 		double getADCStartTime(unsigned int ulScanCounter);
 
@@ -268,7 +268,7 @@ namespace SEQSIM
 		void calculateDerivative();
 
 		void calculateIntegral();
-		void calculateIntegral(double *afG, double *afS);
+		void calculateIntegral(double *afG, double *afS, bool bNullAtTXCenter = true);
 
 		// Determines the longest decay time on all axes
 		void determineLongestTimeConstant();
@@ -424,7 +424,7 @@ namespace SEQSIM
 
 		// Vector holding the gradient vector shapes
 		vector< vector<double> > m_vGCShapes;
-
+		
 		//---------------------------------------------------------------------
 		// Coefficients and values
 		//---------------------------------------------------------------------
@@ -462,7 +462,7 @@ namespace SEQSIM
 		// XML document
 		pugi::xml_document m_doc;
 
-		bool m_bB0DataAvailable;
+		bool m_bEccCompensationAvailable;
 
 	};
 

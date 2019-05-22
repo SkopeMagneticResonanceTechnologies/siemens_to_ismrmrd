@@ -225,7 +225,7 @@ namespace SEQSIM
 		m_aiMatrixB(NULL),
 		m_uiRXEventLength(NULL),
 		m_lCurrentGCSampleLength(0),
-		m_bB0DataAvailable(false),
+		m_bEccCompensationAvailable(false),
 		m_lCurrentTXNumber(0),
 		m_lCurrentRXNumber(0),
 		m_lDataType(DataType::GRADIENT),
@@ -1312,7 +1312,7 @@ namespace SEQSIM
 	 }
 
 
-	 void DSP::calculateIntegral(double *adData, double *adIntegral) {
+	 void DSP::calculateIntegral(double *adData, double *adIntegral, bool bNullAtTXCenter) {
 
 		 static const char *ptModule = { "DSP::calculateIntegral(): " };
 
@@ -1329,13 +1329,15 @@ namespace SEQSIM
 			adIntegral[t] = adIntegral[t - 1] + adData[t] * sfGRT;
 
 			// Null integral at center of RF pulse
-			if (t == x0) {
-				adIntegral[t] = 0;
+			if (bNullAtTXCenter) {
+				if (t == x0) {
+					adIntegral[t] = 0;
 
-				// Get next RF pulse center
-				cTXPulse++;
-				if (cTXPulse < m_lTXEvents) {
-					x0 = (long)ceil((m_adTXCenterTimes[cTXPulse] - sfGRT) / sfGRT);
+					// Get next RF pulse center
+					cTXPulse++;
+					if (cTXPulse < m_lTXEvents) {
+						x0 = (long)ceil((m_adTXCenterTimes[cTXPulse] - sfGRT) / sfGRT);
+					}
 				}
 			}
 		}
@@ -2322,42 +2324,53 @@ namespace SEQSIM
 
 	 }
 
-	 void DSP::applyPhaseModulation(complex<double> *data, unsigned short numberOfSamples, unsigned int ulScanCounter) {
+	 void DSP::applyPhaseModulation(complex<float> *data, unsigned short numberOfSamples, unsigned int ulScanCounter) {
 
-		 throw "Not implemented";
-		 
-		 //static const char *ptModule = { "DSP::applyPhaseModulation(): " };
-	     //
-		 //if (m_bB0DataAvailable) {
-         //
-		//	 // Checks
-		//	 if (ulScanCounter == m_lRXEvents) {
-		//		 PRINT(ptModule, "ACQEND will not be processed.\n");
-		//		 // ACQEND is not processed by DSP.cpp because it appears in the XML file after the GC-<Halt> instruction.
-		//		 return;
-		//	 }
-		//	 else if (ulScanCounter > m_lRXEvents - 1) {
-		//		 mexErrMsgOriginAndTxt(ptModule, "Scan counter exceeds number of stored ADC events.\n");
-		//	 }
-		//	 else if(ulScanCounter < 0) {
-		//		 mexErrMsgOriginAndTxt(ptModule, "Scan counter cannot be smaller than zero.\n");
-		//	 }
-         //
-         //
-		//	 if (numberOfSamples != m_vSamplesPerReadout.at(ulScanCounter)) {
-		//		 static char tLine[1000];
-		//		 tLine[0] = '\0';
-		//		 sprintf_s(tLine, "Number of RX samples (%d) for current scan counter (%d) is not equal to expected number (%d).\n", numberOfSamples, ulScanCounter + 1, m_vSamplesPerReadout.at(ulScanCounter)); // Scan counter starts orginally at 1.
-		//		 mexErrMsgOriginAndTxt(ptModule, tLine);
-		//	 }
-         //
-		//	 // Apply phase modulation	
-		//	 for (long i = 0; i < numberOfSamples; i++) {
-		//		  data[i] =  data[i] * polar((double)1.0, m_afB0Corr[m_vStartIndexRXEvents.at(ulScanCounter) + i]);
-		//		  //data[i] =  m_afB0Corr[m_vStartIndexRXEvents.at(ulScanCounter) + i]; // For testing 
-		//	 }
-         //
-		 //}
+		// Scancounter should start at zero
+
+		static const char *ptModule = { "DSP::applyPhaseModulation(): " };
+	     
+		 if (m_bEccCompensationAvailable) {
+         
+			 // Checks
+			 if (ulScanCounter == m_lRXEvents) {
+				 PRINT(ptModule, "ACQEND will not be processed.\n");
+				 // ACQEND is not processed by DSP.cpp because it appears in the XML file after the GC-<Halt> instruction.
+				 return;
+			 }
+			 else if (ulScanCounter > m_lRXEvents - 1) {
+				 mexErrMsgOriginAndTxt(ptModule, "Scan counter exceeds number of stored ADC events.\n");
+			 }
+			 else if(ulScanCounter < 0) {
+				 mexErrMsgOriginAndTxt(ptModule, "Scan counter cannot be smaller than zero.\n");
+			 }
+         
+			 // Expected number of samples for current readout
+			 long lExpectedNumberOfSamples = 0;
+			 if (ulScanCounter == 0) {
+				 lExpectedNumberOfSamples = m_uiRXEventLength[ulScanCounter];
+			 }
+			 else {
+				 lExpectedNumberOfSamples = m_uiRXEventLength[ulScanCounter] - m_uiRXEventLength[ulScanCounter-1];
+			 }
+
+         
+			 if (numberOfSamples != lExpectedNumberOfSamples) {
+				 static char tLine[1000];
+				 tLine[0] = '\0';
+				 sprintf_s(tLine, "Number of RX samples (%d) for current scan counter (%d) is not equal to expected number (%d).\n", numberOfSamples, ulScanCounter + 1, lExpectedNumberOfSamples);  //Scan counter (Siemens raw data) starts orginally at 1. Therefor we add here 1 again.
+				 mexErrMsgOriginAndTxt(ptModule, tLine);
+			 }
+         
+			 long lStartIndex = m_uiRXEventLength[ulScanCounter];
+
+			 // Apply phase modulation	
+			 for (long i = 0; i < numberOfSamples; i++) {
+				  //data[i] =  data[i] * polar((float)1.0, (float)m_afMULTI_PURPOSE_INTERPX[lStartIndex + i]);
+				  data[i] = complex<float>((float)m_afMULTI_PURPOSE_INTERPX[lStartIndex + i],0.0);  //For testing 
+			 }
+        
+		 }
 		 
 	 }
 
@@ -2507,13 +2520,14 @@ namespace SEQSIM
 			//---------------------------------------------------------------------
 			// Calculate phase by trapezoidal integration
 			//---------------------------------------------------------------------
-			calculateIntegral(m_afMULTI_PURPOSEX, m_afMULTI_PURPOSEX);
+			// Do not null phase at center of TX pulse
+			calculateIntegral(m_afMULTI_PURPOSEX, m_afMULTI_PURPOSEX, false);
 
 			for (long t = 0; t < m_lConvolutionlLength; t++) {
 				m_afMULTI_PURPOSEX[t] *= 2.0*sfPI*sfGAMMA_1H;
 			}
+						
 		}
-	
 
 		//---------------------------------------------------------------------
 		// Interpolate to RX events                      
@@ -2551,6 +2565,10 @@ namespace SEQSIM
 
 				}
 			}
+		}
+
+		if (m_lOutputMode == OutputMode::INTERPOLATED_TO_RX && m_lDataType == DataType::EDDYPHASE) {
+			m_bEccCompensationAvailable = true;
 		}
 	}
 }
