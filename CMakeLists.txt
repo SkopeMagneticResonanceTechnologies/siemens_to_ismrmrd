@@ -128,6 +128,8 @@ add_executable(siemens_to_ismrmrd
                tinyxml.cpp
                tinyxmlerror.cpp
                tinyxmlparser.cpp
+			   ${PROJECT_SOURCE_DIR}/eccc/pugixml.cpp
+			   ${PROJECT_SOURCE_DIR}/eccc/SeqSim.cpp
                ${schema_files}
                )
 
