@@ -1450,21 +1450,21 @@ namespace SEQSIM
 			PRINT("Convolution length = %d.\n", m_lConvolutionlLength);
 		}
 
-		long lMemRequ = m_lRXEvents * sizeof(uint32_t) + (m_lRXSampleLength + m_lTXEvents + m_lTrigEvents) * sizeof(double);
+		double dMemRequ = (double)m_lRXEvents * sizeof(uint32_t) + (double)(m_lRXSampleLength + m_lTXEvents + m_lTrigEvents) * sizeof(double);
 
 		if (m_lOutputMode == OutputMode::FULL) {
 			// Data + exponentials
-			lMemRequ += 6 * m_lConvolutionlLength * sizeof(double);
+			dMemRequ += (double)6.0 * m_lConvolutionlLength * sizeof(double);
 		}
 		else {
 			// Data + exponentials + interpolated data
-			lMemRequ += 6 * m_lConvolutionlLength * sizeof(double);
-			lMemRequ += 3 * m_lRXSampleLength * sizeof(double);
+			dMemRequ += (double)6.0 * m_lConvolutionlLength * sizeof(double);
+			dMemRequ += (double)3.0 * m_lRXSampleLength * sizeof(double);
 		}
 
 
 		if ((m_uiVerbose & DISPLAY_BASIC) == DISPLAY_BASIC) {
-			PRINT("Allocating %.2f MB \n\n", 1.0 * lMemRequ / 1e6);
+			PRINT("Allocating %.2f MB \n\n", 1.0 * dMemRequ / 1e6);
 			mexEvalString("drawnow");
 		}
 	
@@ -1538,21 +1538,21 @@ namespace SEQSIM
 				PRINT("Convolution length = %ld.\n", m_lConvolutionlLength);
 			}
 
-			long lMemRequ = m_lRXEvents * sizeof(uint32_t) + (m_lRXSampleLength + m_lTXEvents + m_lTrigEvents) * sizeof(double);
+			double dMemRequ = (double)m_lRXEvents * sizeof(uint32_t) + (double)(m_lRXSampleLength + m_lTXEvents + m_lTrigEvents) * sizeof(double);
 
 			if (m_lOutputMode == OutputMode::FULL) {
 				// Data + exponentials
-				lMemRequ += 6 * m_lConvolutionlLength * sizeof(double);
+				dMemRequ += (double)6.0*m_lConvolutionlLength * sizeof(double);
 			}
 			else {
 				// Data + exponentials + interpolated data
-				lMemRequ += 6 * m_lConvolutionlLength * sizeof(double);
-				lMemRequ += 3 * m_lRXSampleLength * sizeof(double);
+				dMemRequ += (double)6.0*m_lConvolutionlLength * sizeof(double);
+				dMemRequ += (double)3.0*m_lRXSampleLength * sizeof(double);
 			}
 
 
 			if ((m_uiVerbose & DISPLAY_BASIC) == DISPLAY_BASIC) {
-				PRINT("Allocating %.2f MB \n\n", 1.0 * lMemRequ / 1e6);
+				PRINT("Allocating %.2f MB \n\n", 1.0 * dMemRequ / 1.0e6);
 				mexEvalString("drawnow");
 			}
 
@@ -2358,16 +2358,19 @@ namespace SEQSIM
 			 if (numberOfSamples != lExpectedNumberOfSamples) {
 				 static char tLine[1000];
 				 tLine[0] = '\0';
-				 sprintf_s(tLine, "Number of RX samples (%d) for current scan counter (%d) is not equal to expected number (%d).\n", numberOfSamples, ulScanCounter + 1, lExpectedNumberOfSamples);  //Scan counter (Siemens raw data) starts orginally at 1. Therefor we add here 1 again.
+				 printf(tLine, "Number of RX samples (%d) for current scan counter (%d) is not equal to expected number (%d).\n", numberOfSamples, ulScanCounter + 1, lExpectedNumberOfSamples);  //Scan counter (Siemens raw data) starts orginally at 1. Therefor we add here 1 again.
 				 mexErrMsgOriginAndTxt(ptModule, tLine);
 			 }
-         
-			 long lStartIndex = m_uiRXEventLength[ulScanCounter];
+
+			 long lStartIndex = 0;
+			 if (ulScanCounter > 0)
+				 lStartIndex = m_uiRXEventLength[ulScanCounter-1];
+
 
 			 // Apply phase modulation	
 			 for (long i = 0; i < numberOfSamples; i++) {
-				  //data[i] =  data[i] * polar((float)1.0, (float)m_afMULTI_PURPOSE_INTERPX[lStartIndex + i]);
-				  data[i] = complex<float>((float)m_afMULTI_PURPOSE_INTERPX[lStartIndex + i],0.0);  //For testing 
+				   data[i] =  data[i] * polar((float)1.0, (float)(-1.0*m_afMULTI_PURPOSE_INTERPX[lStartIndex + i]));
+				   //data[i] = complex<float>(m_afMULTI_PURPOSE_INTERPX[lStartIndex + i],0); // For  debug only
 			 }
         
 		 }
@@ -2538,32 +2541,34 @@ namespace SEQSIM
 			if (m_lDataType != DataType::EDDYPHASE) {
 				this->interpolateData(m_afMULTI_PURPOSEY, m_afMULTI_PURPOSE_INTERPY);
 				this->interpolateData(m_afMULTI_PURPOSEZ, m_afMULTI_PURPOSE_INTERPZ);
-			}
+			
 
-			if (m_lTXEvents > 1) {
+				if (m_lTXEvents > 1) {
 
-				// Set RX times relative to RF center
-				long txPulse = -1;
+					// Set RX times relative to RF center
+					long txPulse = -1;
 
-				double x0 = 0.0;
+					double x0 = 0.0;
 
-				// Loop over array
-				for (long t = 0; t < m_lRXSampleLength; t++) {
+					// Loop over array
+					for (long t = 0; t < m_lRXSampleLength; t++) {
 
-					// Null integral at center of RF pulse
-					if (txPulse + 1 < m_lTXEvents) {
+						// Null integral at center of RF pulse
+						if (txPulse + 1 < m_lTXEvents) {
 
-						if ( m_adRXTimes[t] >= m_adTXCenterTimes[txPulse + 1] ) {
+							if ( m_adRXTimes[t] >= m_adTXCenterTimes[txPulse + 1] ) {
 
-							txPulse++;
-							x0 = m_adTXCenterTimes[txPulse];
+								txPulse++;
+								x0 = m_adTXCenterTimes[txPulse];
+							}
+
 						}
 
+						m_adRXTimes[t] -= x0;  
+
 					}
-
-					m_adRXTimes[t] -= x0;  
-
 				}
+
 			}
 		}
 

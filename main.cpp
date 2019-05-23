@@ -822,41 +822,117 @@ int main(int argc, char *argv[] )
 
 		SEQSIM::ECC_Coeff sCoeffX;
 		SEQSIM::ECC_Coeff sCoeffY;
-		SEQSIM::ECC_Coeff sCoeffZ;		
+		SEQSIM::ECC_Coeff sCoeffZ;	
 
-		// X coeffs
 		sCoeffX.vfAmp.resize(3);
-		sCoeffX.vfAmp.at(0) = 0.1134;
-		sCoeffX.vfAmp.at(1) = -0.0790;
-		sCoeffX.vfAmp.at(2) = 0.1607;
+		sCoeffY.vfAmp.resize(3);
+		sCoeffZ.vfAmp.resize(3);
 
 		sCoeffX.vfTau.resize(3);
-		sCoeffX.vfTau.at(0) = 0.3603;
-		sCoeffX.vfTau.at(1) = 0.0057;
-		sCoeffX.vfTau.at(2) = 0.0020;
-
-		// Y coeffs	
-		sCoeffY.vfAmp.resize(3);
-		sCoeffY.vfAmp.at(0) = 0.0076;
-		sCoeffY.vfAmp.at(1) = -0.0891;
-		sCoeffY.vfAmp.at(2) = 0.0083;
-
 		sCoeffY.vfTau.resize(3);
-		sCoeffY.vfTau.at(0) = 1.9998;
-		sCoeffY.vfTau.at(1) = 0.1491;
-		sCoeffY.vfTau.at(2) = 0.0020;
-
-		// Z coeffs
-		sCoeffZ.vfAmp.resize(3);
-		sCoeffZ.vfAmp.at(0) = 0.2548;
-		sCoeffZ.vfAmp.at(1) = 0.1812;
-		sCoeffZ.vfAmp.at(2) = -0.0143;
-
 		sCoeffZ.vfTau.resize(3);
-		sCoeffZ.vfTau.at(0) = 0.5425;
-		sCoeffZ.vfTau.at(1) = 0.1226;
-		sCoeffZ.vfTau.at(2) = 0.0017;
 
+		// Init values
+		for (int i = 0; i < 3; i++) {
+			sCoeffX.vfAmp.at(i) = 0;
+			sCoeffY.vfAmp.at(i) = 0;
+			sCoeffZ.vfAmp.at(i) = 0;
+
+			sCoeffX.vfTau.at(i) = 0;
+			sCoeffY.vfTau.at(i) = 0;
+			sCoeffZ.vfTau.at(i) = 0;
+		}
+
+		// Get ECC value from MRD header
+		if (header.userParameters.is_present()) {
+			
+			std::vector<ISMRMRD::UserParameterDouble> vUserParam = header.userParameters.get().userParameterDouble;
+
+			if (vUserParam.size() != 0) {
+				for (int cParam = 0; cParam < vUserParam.size(); cParam++) {
+
+					// Get current name and value
+					std::string name = vUserParam.at(cParam).name;
+					double value = vUserParam.at(cParam).value;
+
+					for (int i = 0; i <3; i++) {						
+
+						// X
+						if (name.compare(std::string("sB0CompensationX_Amp_") + std::to_string(i)) == 0) {
+							sCoeffX.vfAmp.at(i) = value;
+						}
+						if (name.compare(std::string("sB0CompensationX_Tau_") + std::to_string(i)) == 0) {
+							sCoeffX.vfTau.at(i) = value;
+						}
+
+						// Y
+						if (name.compare(std::string("sB0CompensationY_Amp_") + std::to_string(i)) == 0) {
+							sCoeffY.vfAmp.at(i) = value;
+						}
+						if (name.compare(std::string("sB0CompensationY_Tau_") + std::to_string(i)) == 0) {
+							sCoeffY.vfTau.at(i) = value;
+						}
+
+						// Z
+						if (name.compare(std::string("sB0CompensationZ_Amp_") + std::to_string(i)) == 0) {
+							sCoeffZ.vfAmp.at(i) = value;
+						}
+						if (name.compare(std::string("sB0CompensationZ_Tau_") + std::to_string(i)) == 0) {
+							sCoeffZ.vfTau.at(i) = value;
+						}
+					}
+				}
+			}
+			else {
+				std::cout << "User parametersDouble are not present. Cannot find ECC coefficients." << std::endl;
+				return -1;
+			}
+		}
+		else {
+			std::cout << "User parameters are not present. Cannot find ECC coefficients." << std::endl;
+			return -1;
+		}
+
+		// Check if values have been set
+		for (int i = 0; i < 3; i++) {
+			if (sCoeffX.vfAmp.at(i) == 0) {
+				std::cerr << "ECC X amplitude (" << i << ") is zero." << std::endl; 
+				return -1;
+			}
+			if (sCoeffY.vfAmp.at(i) == 0) {
+				std::cerr << "ECC Y amplitude (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+			if (sCoeffZ.vfAmp.at(i) == 0) {
+				std::cerr << "ECC Z amplitude (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+
+			if (sCoeffX.vfTau.at(i) == 0) {
+				std::cerr << "ECC X decay time (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+			if (sCoeffY.vfTau.at(i) == 0) {
+				std::cerr << "ECC Y decay time (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+			if (sCoeffZ.vfTau.at(i) == 0) {
+				std::cerr << "ECC Z decay time (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+
+			/*
+			std::cout << "ECC X amplitude (" << i << ") = " << sCoeffX.vfAmp.at(i) << std::endl;
+			std::cout << "ECC X decay time (" << i << ") = " << sCoeffX.vfTau.at(i) << std::endl;
+
+			std::cout << "ECC Y amplitude (" << i << ") = " << sCoeffY.vfAmp.at(i) << std::endl;
+			std::cout << "ECC Y decay time (" << i << ") = " << sCoeffY.vfTau.at(i) << std::endl;
+
+			std::cout << "ECC Z amplitude (" << i << ") = " << sCoeffZ.vfAmp.at(i) << std::endl;
+			std::cout << "ECC Z decay time (" << i << ") = " << sCoeffZ.vfTau.at(i) << std::endl;
+			*/
+		}
+		
 		// Set coefficients
 		dsp.setB0CorrCoeff(sCoeffX, sCoeffY, sCoeffZ);
 
@@ -988,6 +1064,7 @@ int main(int argc, char *argv[] )
 			// Append dataset
 			ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, dReadoutOversampling, max_channels, isAdjustCoilSens,
 				isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header));
+			
 			
 		}//End of the while loop
 
