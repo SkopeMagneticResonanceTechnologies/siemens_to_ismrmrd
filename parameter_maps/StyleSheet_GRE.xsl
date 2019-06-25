@@ -808,47 +808,7 @@
 						<xsl:value-of select="1"/>
 					</value>
 				</userParameterLong>
-			
-				<!-- Trig to ADC time: imaging scans -->
-				<userParameterDouble>
-					<name>triggerToAcquisitionDelay</name>
-					<value>
-						<xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[3] div 1000.0"/>
-					</value>
-				</userParameterDouble>			
-
-				<!-- Suggested minimal TR for skope monitoring system -->
-				<userParameterDouble>
-					<name>skopeMinimalTR</name>
-					<value>
-						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[1]"/>
-					</value>
-				</userParameterDouble>
-
-				<!-- Suggested interleave TR for skope monitoring system -->
-				<userParameterDouble>
-					<name>skopeInterleaveTR</name>
-					<value>
-						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[2]"/>
-					</value>
-				</userParameterDouble>
-
-				<!-- Suggested skope field probe acquisition duration -->
-				<userParameterDouble>
-					<name>skopeAqDur</name>
-					<value>
-						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[3]"/>
-					</value>
-				</userParameterDouble>
-
-				<!-- Gradient free interval for field probe excitation -->
-				<userParameterDouble>
-					<name>skopeGradientFreeInterval</name>
-					<value>
-						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[4]"/>
-					</value>
-				</userParameterDouble>
-				
+							
                 <xsl:if test="siemens/MEAS/sAngio/sFlowArray/lSize">
                     <userParameterLong>
                         <name>VENC_0</name>
@@ -971,6 +931,47 @@
                       </value>
                   </userParameterDouble>
                 </xsl:if>
+				
+				
+				<!-- Trig to ADC time: imaging scans -->
+				<userParameterDouble>
+					<name>triggerToAcquisitionDelay</name>
+					<value>
+						<xsl:value-of select="siemens/MEAS/sWipMemBlock/alFree[3] div 1000.0"/>
+					</value>
+				</userParameterDouble>			
+
+				<!-- Suggested minimal TR for skope monitoring system -->
+				<userParameterDouble>
+					<name>skopeMinimalTR</name>
+					<value>
+						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[1]"/>
+					</value>
+				</userParameterDouble>
+
+				<!-- Suggested interleave TR for skope monitoring system -->
+				<userParameterDouble>
+					<name>skopeInterleaveTR</name>
+					<value>
+						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[2]"/>
+					</value>
+				</userParameterDouble>
+
+				<!-- Suggested skope field probe acquisition duration -->
+				<userParameterDouble>
+					<name>skopeAqDur</name>
+					<value>
+						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[3]"/>
+					</value>
+				</userParameterDouble>
+
+				<!-- Gradient free interval for field probe excitation -->
+				<userParameterDouble>
+					<name>skopeGradientFreeInterval</name>
+					<value>
+						<xsl:value-of select="siemens/MEAS/sWipMemBlock/adFree[4]"/>
+					</value>
+				</userParameterDouble>
 
 				
 				
