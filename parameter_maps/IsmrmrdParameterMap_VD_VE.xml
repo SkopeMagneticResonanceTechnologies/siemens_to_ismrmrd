@@ -126,6 +126,7 @@
 
         <!-- diffusion weighted imaging parameter -->
         <p><s>MEAS.sDiffusion.lDiffDirections</s>                               <d>siemens.MEAS.sDiffusion.lDiffDirections</d></p>
+		<p><s>MEAS.sDiffusion.lDiffWeightings</s>                               <d>siemens.MEAS.sDiffusion.lDiffWeightings</d></p>
         <p><s>MEAS.sDiffusion.alBValue</s>                                      <d>siemens.MEAS.sDiffusion.alBValue</d></p>
 
         <!-- user defined parameter -->
