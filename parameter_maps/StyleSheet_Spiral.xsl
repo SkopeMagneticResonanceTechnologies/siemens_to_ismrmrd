@@ -381,8 +381,8 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                         <minimum>0</minimum>
                         <maximum>
                             <xsl:choose>
-                                <xsl:when test="siemens/YAPS/iNSet">
-                                    <xsl:value-of select="siemens/YAPS/iNSet - 1"/>
+                                <xsl:when test="siemens/MEAS/sDiffusion/lDiffWeightings">
+                                    <xsl:value-of select="siemens/MEAS/sDiffusion/lDiffWeightings - 1"/>
                                 </xsl:when>
                                 <xsl:otherwise>0</xsl:otherwise>
                             </xsl:choose>
@@ -445,8 +445,15 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                     </average>
 					<user_0>
 						<minimum>0</minimum>
-						<maximum>0</maximum>
-						<center>0</center>
+                        <maximum>
+                            <xsl:choose>
+                                <xsl:when test="siemens/MEAS/sDiffusion/lDiffDirections">
+                                    <xsl:value-of select="siemens/MEAS/sDiffusion/lDiffDirections - 1"/>
+                                </xsl:when>
+                                <xsl:otherwise>0</xsl:otherwise>
+                            </xsl:choose>
+                        </maximum>
+                        <center>0</center>
 					</user_0>
 					<user_1>
 						<minimum>0</minimum>
