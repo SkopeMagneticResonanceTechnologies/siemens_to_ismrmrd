@@ -29,6 +29,12 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/converter_version.in ${CMAKE_CURRENT_
 # set project specific cmake module path
 set (SIEMENS_TO_ISMRMRD_CMAKE_DIR ${PROJECT_SOURCE_DIR}/cmake CACHE PATH
   "Location of CMake scripts")
+  
+ 
+# and include it to the search list
+list(APPEND CMAKE_MODULE_PATH ${SIEMENS_TO_ISMRMRD_CMAKE_DIR})
+
+
 
 message ("PROJECT CMAKE DIR: " ${SIEMENS_TO_ISMRMRD_CMAKE_DIR})
 message ("PROJECT SOURCE DIR: " ${PROJECT_SOURCE_DIR})
@@ -71,8 +77,9 @@ set(Boost_NO_BOOST_CMAKE ON)
 find_package(Boost COMPONENTS system thread program_options filesystem timer REQUIRED)
 find_package(ISMRMRD REQUIRED)
 find_package(HDF5 1.8 REQUIRED COMPONENTS C)
+find_package(FFTW3 COMPONENTS double)
 
-include_directories( ${ISMRMRD_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR} )
+include_directories( ${ISMRMRD_INCLUDE_DIR} ${HDF5_C_INCLUDE_DIR} ${FFTW3_INCLUDE_DIR})
 link_directories( ${ISMRMRD_LIB_DIR} )
 
 add_executable(embed base64.cpp embed.cpp)
@@ -121,16 +128,36 @@ add_executable(siemens_to_ismrmrd
                tinyxml.cpp
                tinyxmlerror.cpp
                tinyxmlparser.cpp
+			   ${PROJECT_SOURCE_DIR}/eccc/pugixml.cpp
+			   ${PROJECT_SOURCE_DIR}/eccc/SeqSim.cpp
                ${schema_files}
                )
 
-target_link_libraries(siemens_to_ismrmrd ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIES})
+target_link_libraries(siemens_to_ismrmrd 	${LIBXSLT_LIBRARIES} 
+											${LIBXML2_LIBRARIES} 
+											${FFTW3_LIBRARIES} 
+											${ISMRMRD_LIBRARIES} 
+											${Boost_LIBRARIES}
+					  )
 
-target_link_libraries(siemens_to_ismrmrd
-                        ${ISMRMRD_LIBRARIES}
-                        ${Boost_LIBRARIES} )
 
+						
+						
+message ("FFTW3_LIBRARIES: " ${FFTW3_LIBRARIES})
+				
 install(TARGETS siemens_to_ismrmrd DESTINATION bin)
+
+# install the cmake modules
+set(ConfigPackageLocation lib/cmake/SIEMENS_TO_ISMRMRD)
+
+install(
+  FILES
+    cmake/FindFFTW3.cmake
+  DESTINATION
+    ${ConfigPackageLocation}
+  COMPONENT
+    Devel
+)
 
 # Create package
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)

@@ -43,6 +43,10 @@ using boost::locale::conv::utf_to_utf;
 #include <typeinfo>
 
 
+#include "eccc/SeqSim.h"  
+
+SEQSIM::DSP dsp;
+
 
 const size_t MYSTERY_BYTES_EXPECTED = 160;
 
@@ -472,6 +476,9 @@ int main(int argc, char *argv[] )
     std::string usermap_file;
     std::string usermap_xsl;
 
+	std::string dsp_file;
+	std::string dsv_folder;
+
     std::string schema_file_name;
 
     std::string ismrmrd_file;
@@ -498,6 +505,8 @@ int main(int argc, char *argv[] )
             ("file,f",                  po::value<std::string>(&siemens_dat_filename), "<SIEMENS dat file>")
             ("measNum,z",               po::value<unsigned int>(&measurement_number)->default_value(1), "<Measurement number>")
 			("pMap,m",                  po::value<std::string>(&parammap_file), "<Parameter map XML file>")
+			("dsp,d",					po::value<std::string>(&dsp_file), "<DSP file>")
+			("dsv,s",					po::value<std::string>(&dsv_folder), "<DSV folder>")
             ("pMapStyle,x",             po::value<std::string>(&parammap_xsl), "<Parameter stylesheet XSL file>")
             ("user-map",                po::value<std::string>(&usermap_file), "<Provide a parameter map XML file>")
             ("user-stylesheet",         po::value<std::string>(&usermap_xsl), "<Provide a parameter stylesheet XSL file>")
@@ -520,6 +529,8 @@ int main(int argc, char *argv[] )
             ("file,f",                  "<SIEMENS dat file>")
             ("measNum,z",               "<Measurement number>")
             ("pMap,m",                  "<Parameter map XML>")
+			("dsp,d",					"<DSP file>")
+			("dsv,s",					"<DSP folder>")
             ("pMapStyle,x",             "<Parameter stylesheet XSL>")
             ("user-map",                "<Provide a parameter map XML file>")
             ("user-stylesheet",         "<Provide a parameter stylesheet XSL file>")
@@ -792,10 +803,153 @@ int main(int argc, char *argv[] )
 
     // Free memory used for MeasurementHeaderBuffers
 
-	// For EPI, we do not care about segments
-	if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
+	// For Cartesian imaging, we do not care about segments
+	ISMRMRD::TrajectoryType trajType = header.encoding.at(0).trajectory;
+	if (trajType == ISMRMRD::TrajectoryType::CARTESIAN) {
 		ignore_Segments = true;
 	} 
+
+
+	//---------------------------------------------------------------------
+	// Set DSP object
+	//---------------------------------------------------------------------
+	if (dsp_file.length() != 0 || dsv_folder.length() != 0)
+	{
+		if (dsp_file.length() != 0) {
+			std::cout << "Using the following DSP file: " << dsp_file << std::endl;
+			dsp.setFileName(dsp_file.c_str());
+		}
+		else {
+			std::cout << "Using the following DSV folder: " << dsv_folder << std::endl;
+			dsp.setDSVFolderPath(dsv_folder.c_str());
+		}
+
+		dsp.setOutputMode(SEQSIM::OutputMode::INTERPOLATED_TO_RX);
+		dsp.setDataType(SEQSIM::DataType::EDDYPHASE);
+		dsp.setVerboseMode(SEQSIM::Verbose::DISPLAY_BASIC);
+
+		SEQSIM::ECC_Coeff sCoeffX;
+		SEQSIM::ECC_Coeff sCoeffY;
+		SEQSIM::ECC_Coeff sCoeffZ;	
+
+		sCoeffX.vfAmp.resize(3);
+		sCoeffY.vfAmp.resize(3);
+		sCoeffZ.vfAmp.resize(3);
+
+		sCoeffX.vfTau.resize(3);
+		sCoeffY.vfTau.resize(3);
+		sCoeffZ.vfTau.resize(3);
+
+		// Init values
+		for (int i = 0; i < 3; i++) {
+			sCoeffX.vfAmp.at(i) = 0;
+			sCoeffY.vfAmp.at(i) = 0;
+			sCoeffZ.vfAmp.at(i) = 0;
+
+			sCoeffX.vfTau.at(i) = 0;
+			sCoeffY.vfTau.at(i) = 0;
+			sCoeffZ.vfTau.at(i) = 0;
+		}
+
+		// Get ECC value from MRD header
+		if (header.userParameters.is_present()) {
+			
+			std::vector<ISMRMRD::UserParameterDouble> vUserParam = header.userParameters.get().userParameterDouble;
+
+			if (vUserParam.size() != 0) {
+				for (int cParam = 0; cParam < vUserParam.size(); cParam++) {
+
+					// Get current name and value
+					std::string name = vUserParam.at(cParam).name;
+					double value = vUserParam.at(cParam).value;
+
+					for (int i = 0; i <3; i++) {						
+
+						// X
+						if (name.compare(std::string("sB0CompensationX_Amp_") + std::to_string(i)) == 0) {
+							sCoeffX.vfAmp.at(i) = value;
+						}
+						if (name.compare(std::string("sB0CompensationX_Tau_") + std::to_string(i)) == 0) {
+							sCoeffX.vfTau.at(i) = value;
+						}
+
+						// Y
+						if (name.compare(std::string("sB0CompensationY_Amp_") + std::to_string(i)) == 0) {
+							sCoeffY.vfAmp.at(i) = value;
+						}
+						if (name.compare(std::string("sB0CompensationY_Tau_") + std::to_string(i)) == 0) {
+							sCoeffY.vfTau.at(i) = value;
+						}
+
+						// Z
+						if (name.compare(std::string("sB0CompensationZ_Amp_") + std::to_string(i)) == 0) {
+							sCoeffZ.vfAmp.at(i) = value;
+						}
+						if (name.compare(std::string("sB0CompensationZ_Tau_") + std::to_string(i)) == 0) {
+							sCoeffZ.vfTau.at(i) = value;
+						}
+					}
+				}
+			}
+			else {
+				std::cout << "User parametersDouble are not present. Cannot find ECC coefficients." << std::endl;
+				return -1;
+			}
+		}
+		else {
+			std::cout << "User parameters are not present. Cannot find ECC coefficients." << std::endl;
+			return -1;
+		}
+
+		// Check if values have been set
+		for (int i = 0; i < 3; i++) {
+			if (sCoeffX.vfAmp.at(i) == 0) {
+				std::cerr << "ECC X amplitude (" << i << ") is zero." << std::endl; 
+				return -1;
+			}
+			if (sCoeffY.vfAmp.at(i) == 0) {
+				std::cerr << "ECC Y amplitude (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+			if (sCoeffZ.vfAmp.at(i) == 0) {
+				std::cerr << "ECC Z amplitude (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+
+			if (sCoeffX.vfTau.at(i) == 0) {
+				std::cerr << "ECC X decay time (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+			if (sCoeffY.vfTau.at(i) == 0) {
+				std::cerr << "ECC Y decay time (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+			if (sCoeffZ.vfTau.at(i) == 0) {
+				std::cerr << "ECC Z decay time (" << i << ") is zero." << std::endl;
+				return -1;
+			}
+
+			/*
+			std::cout << "ECC X amplitude (" << i << ") = " << sCoeffX.vfAmp.at(i) << std::endl;
+			std::cout << "ECC X decay time (" << i << ") = " << sCoeffX.vfTau.at(i) << std::endl;
+
+			std::cout << "ECC Y amplitude (" << i << ") = " << sCoeffY.vfAmp.at(i) << std::endl;
+			std::cout << "ECC Y decay time (" << i << ") = " << sCoeffY.vfTau.at(i) << std::endl;
+
+			std::cout << "ECC Z amplitude (" << i << ") = " << sCoeffZ.vfAmp.at(i) << std::endl;
+			std::cout << "ECC Z decay time (" << i << ") = " << sCoeffZ.vfTau.at(i) << std::endl;
+			*/
+		}
+		
+		// Set coefficients
+		dsp.setB0CorrCoeff(sCoeffX, sCoeffY, sCoeffZ);
+
+		//dsp.setVerboseMode(SEQSIM::DISPLAY_BASIC);
+		
+		dsp.run();
+		//dsp.writeToFile();
+
+	}
 
 
     auto ismrmrd_dataset = boost::make_shared<ISMRMRD::Dataset>(ismrmrd_file.c_str(), ismrmrd_group.c_str(), true);
@@ -919,6 +1073,7 @@ int main(int argc, char *argv[] )
 			// Append dataset
 			ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, dReadoutOversampling, max_channels, isAdjustCoilSens,
 				isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header));
+			
 			
 		}//End of the while loop
 
@@ -1413,8 +1568,9 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 				}
 			}
 		}
+
 		// Undo B0 eddy current correction
-		//dsp.applyPhaseModulation(data, ismrmrd_acq.number_of_samples(), scanhead.ulScanCounter - 1); // ulScanCounter starts at 1.
+		dsp.applyPhaseModulation(data, ismrmrd_acq.number_of_samples(), scanhead.ulScanCounter - 1); // ulScanCounter starts at 1 but we want to stick to the C++ convention.
     }
 
 
