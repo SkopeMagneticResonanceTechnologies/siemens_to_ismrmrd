@@ -477,6 +477,7 @@ int main(int argc, char *argv[] )
     std::string usermap_xsl;
 
 	std::string dsp_file;
+	std::string dsv_folder;
 
     std::string schema_file_name;
 
@@ -505,6 +506,7 @@ int main(int argc, char *argv[] )
             ("measNum,z",               po::value<unsigned int>(&measurement_number)->default_value(1), "<Measurement number>")
 			("pMap,m",                  po::value<std::string>(&parammap_file), "<Parameter map XML file>")
 			("dsp,d",					po::value<std::string>(&dsp_file), "<DSP file>")
+			("dsv,s",					po::value<std::string>(&dsv_folder), "<DSV folder>")
             ("pMapStyle,x",             po::value<std::string>(&parammap_xsl), "<Parameter stylesheet XSL file>")
             ("user-map",                po::value<std::string>(&usermap_file), "<Provide a parameter map XML file>")
             ("user-stylesheet",         po::value<std::string>(&usermap_xsl), "<Provide a parameter stylesheet XSL file>")
@@ -528,6 +530,7 @@ int main(int argc, char *argv[] )
             ("measNum,z",               "<Measurement number>")
             ("pMap,m",                  "<Parameter map XML>")
 			("dsp,d",					"<DSP file>")
+			("dsv,s",					"<DSP folder>")
             ("pMapStyle,x",             "<Parameter stylesheet XSL>")
             ("user-map",                "<Provide a parameter map XML file>")
             ("user-stylesheet",         "<Provide a parameter stylesheet XSL file>")
@@ -800,25 +803,30 @@ int main(int argc, char *argv[] )
 
     // Free memory used for MeasurementHeaderBuffers
 
-	// For EPI, we do not care about segments
-	if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
+	// For Cartesian imaging, we do not care about segments
+	ISMRMRD::TrajectoryType trajType = header.encoding.at(0).trajectory;
+	if (trajType == ISMRMRD::TrajectoryType::CARTESIAN) {
 		ignore_Segments = true;
 	} 
-
-
-
 
 
 	//---------------------------------------------------------------------
 	// Set DSP object
 	//---------------------------------------------------------------------
-	if (dsp_file.length() != 0)
+	if (dsp_file.length() != 0 || dsv_folder.length() != 0)
 	{
-		std::cout << "Using the following DSP file: "<< dsp_file << std::endl;
-		dsp.setFileName(dsp_file.c_str());
+		if (dsp_file.length() != 0) {
+			std::cout << "Using the following DSP file: " << dsp_file << std::endl;
+			dsp.setFileName(dsp_file.c_str());
+		}
+		else {
+			std::cout << "Using the following DSV folder: " << dsv_folder << std::endl;
+			dsp.setDSVFolderPath(dsv_folder.c_str());
+		}
 
 		dsp.setOutputMode(SEQSIM::OutputMode::INTERPOLATED_TO_RX);
 		dsp.setDataType(SEQSIM::DataType::EDDYPHASE);
+		dsp.setVerboseMode(SEQSIM::Verbose::DISPLAY_BASIC);
 
 		SEQSIM::ECC_Coeff sCoeffX;
 		SEQSIM::ECC_Coeff sCoeffY;
@@ -936,9 +944,10 @@ int main(int argc, char *argv[] )
 		// Set coefficients
 		dsp.setB0CorrCoeff(sCoeffX, sCoeffY, sCoeffZ);
 
-		dsp.setVerboseMode(SEQSIM::DISPLAY_BASIC);
+		//dsp.setVerboseMode(SEQSIM::DISPLAY_BASIC);
 		
 		dsp.run();
+		//dsp.writeToFile();
 
 	}
 

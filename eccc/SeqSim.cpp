@@ -411,6 +411,11 @@ namespace SEQSIM
 
 	 }
 
+	 void DSP::setDSVFolderPath(const char * pFolderPath) {
+
+		 m_sDSVFolderPath = string(pFolderPath);
+	 }
+
 
 	 // See enum Verbose in types.h 
 	 void DSP::setVerboseMode(int verbose) {
@@ -497,6 +502,7 @@ namespace SEQSIM
 		string fileNameY(m_fpXMLFile.path);
 		string fileNameZ(m_fpXMLFile.path);
 
+
 		switch (m_lDataType) {
 		case DataType::GRADIENT: 
 			fileNameX.append("GX.txt");
@@ -523,13 +529,14 @@ namespace SEQSIM
 			break;
 		}
 
+
 		// Write data
 		if (m_lDataType == DataType::EDDYPHASE) {
 
 			// Open file
 			outputFileX.open(fileNameX);
 			
-			if (outputFileX.is_open() && outputFileY.is_open() && outputFileZ.is_open())
+			if (outputFileX.is_open())
 			{
 				if (m_lOutputMode == OutputMode::FULL)
 					for (long t = 0; t < m_lConvolutionlLength; t++) {
@@ -635,217 +642,293 @@ namespace SEQSIM
 	// Thereafter the text file is rewound till the first Halt gradient instruction
 	void DSP::calcMemoryRequirement(){
 
-		static const char *ptModule = { "DSP::calcMemoryRequirement()" };
-	
-		//---------------------------------------------------------------------
-		// Initialise
-		//---------------------------------------------------------------------
-
-		pugi::xml_node root;
+		static const char *ptModule = { "DSP::calcMemoryRequirement(): " };
 	
 		// Gradient shape length
-		m_lGradientShapeLength	= 0;
+		m_lGradientShapeLength = 0;
 
 		// Number of readout events
-		m_lRXEvents				= 0;
+		m_lRXEvents = 0;
 
 		// Number of transmit events
-		m_lTXEvents             = 0;
+		m_lTXEvents = 0;
 
 		// Number of trigger events
-		m_lTrigEvents			= 0;
+		m_lTrigEvents = 0;
 
 		// Number of ADC samples (must be the same for all imaging scans)
-		long ADCSamples			= -1;
-
-		//---------------------------------------------------------------------
-		// Load document
-		//---------------------------------------------------------------------
-		string fullpath = m_fpXMLFile.path + m_fpXMLFile.name + m_fpXMLFile.ext;
-
-		if (!m_doc.load_file(fullpath.c_str())) {
-			mexErrMsgOriginAndTxt(ptModule, "Error loading xml file.\n");
-		}
-
-		//---------------------------------------------------------------------
-		// Read event blocks
-		//---------------------------------------------------------------------
-		START:
-
-		// Delete full path for now. If an additional xml file need to be loaded
-		// then it will be set during the next for-loop
-		fullpath.clear();
-	
-		// Load root
-		root = m_doc.child("NUMARIS4_DSP_SIMULATION");
-	
-		// Loop through children of NUMARIS4_DSP_SIMULATION
-		for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling())
-		{
+		long ADCSamples = -1;
 		
-			// Convert name to string
-			std::string sNodeName(node.name());
+
+		if (m_sDSVFolderPath.size() == 0) {
+			//---------------------------------------------------------------------
+			// Initialise
+			//---------------------------------------------------------------------
+
+			pugi::xml_node root;
 
 			//---------------------------------------------------------------------
-			// Event block
+			// Load document
 			//---------------------------------------------------------------------
-			if (sNodeName.compare("EventBlock") == 0) {
-
-				//---------------------------------------------------------------------
-				// GC
-				//---------------------------------------------------------------------
-				pugi::xml_node nodeGC = node.child("GC");
-
-				// Loop through children of GC
-				for (pugi::xml_node child = nodeGC.first_child(); child; child = child.next_sibling())
-				{
-
-					// Convert name to string
-					std::string sChildName(child.name());
-
-					if (sChildName.compare("Control") == 0) {
-					
-						// Get attribute 'Ticks'
-						if (pugi::xml_attribute attr = child.attribute("Ticks")) // attribute really exists
-						{
-							// Get number of samples
-							m_lGradientShapeLength += attr.as_int();
-						}
-
-						// Check ig control has a child called 'Trigger'
-						for (pugi::xml_node childControl = child.first_child(); childControl; childControl = childControl.next_sibling())
-						{
-							// Convert name to string
-							std::string sChildName2(childControl.name());
-
-							if (sChildName2.compare("Trigger") == 0) {
-
-								// Get text 
-								string sTriggerType = childControl.text().as_string();
-
-								if (sTriggerType.compare("TX") == 0) {
-									m_lTXEvents++;
-								}
-							}
-
-							if (sChildName2.compare("Sync") == 0) {
-
-								// Only consider EXT_TRIGGER
-								if (pugi::xml_attribute attr = childControl.attribute("Ext")) 
-								{
-									// One could also differentiate between EXTR0 and EXTR1 if needed
-									// by getting the attribute value
-									m_lTrigEvents++;
-								}
-
-							}
-
-						}
-
-					}
-					else if (sChildName.compare("Halt") == 0) {
-						if ((m_uiVerbose & DISPLAY_ADVANCED) == DISPLAY_ADVANCED) {
-							PRINT("%s: Halt instruction received.\n", ptModule);
-						}
-						goto FINISH;
-					}
-				}
-
-				//---------------------------------------------------------------------
-				// RX
-				//---------------------------------------------------------------------
-				pugi::xml_node nodeRX = node.child("RX");
-
-				// Loop through children of RX
-				for (pugi::xml_node child = nodeRX.first_child(); child; child = child.next_sibling())
-				{
-
-					// Convert name to string
-					std::string sChildName(child.name());
-
-					if (sChildName.compare("Readout") == 0) {
-
-						// Get attribute 'NumberOfPoints'
-						if (pugi::xml_attribute attr = child.attribute("NumberOfPoints")) // attribute really exists
-						{
-
-							pugi::xml_node header = child.child("Info").child("Header");
-							pugi::xml_attribute evalMask = header.attribute("aulEvalInfoMask0");
-						
-							unsigned long ulEvalInfoMask = evalMask.as_uint();
-						
-							// Only consider imaging scans
-							if (
-							//	   (ulEvalInfoMask & MdhBitField::MDH_FLAG_ONLINE) == MdhBitField::MDH_FLAG_ONLINE &&
-							//	 (ulEvalInfoMask & MdhBitField::MDH_FLAG_PHASCOR) != MdhBitField::MDH_FLAG_PHASCOR &&
-							//	 (ulEvalInfoMask & MdhBitField::MDH_FLAG_NOISEADJSCAN) != MdhBitField::MDH_FLAG_NOISEADJSCAN &&
-								 (ulEvalInfoMask & MdhBitField::MDH_FLAG_ACQEND) != MdhBitField::MDH_FLAG_ACQEND) {
-
-								// Get number of samples
-								long Samples = attr.as_int();
-							
-								// Set ADC samples if was not set yet
-								if (ADCSamples == -1)
-									ADCSamples = Samples;
-
-								//if (ADCSamples != Samples)
-								//	mexErrMsgOriginAndTxt(ptModule,"Number of ADC samples must be the same for all acqusitions. (Possible reason: Seperate Ref scans have an oversampling factor equal to 1.)\n");
-
-								// Add samples to counter
-								m_lRXSampleLength += Samples;
-								m_lRXEvents++;
-
-							} // Flag check
-						} // Attribute Number of points
-					
-					} // Readout
-
-				} // Loop over children
-		
-			} // Loop over Event blocks
-			else if (sNodeName.compare("Continue") == 0) {
-
-				// Get attribute 'File'
-				if (pugi::xml_attribute attr = node.attribute("File")) // attribute really exists
-				{
-					// Get next file name
-					pugi::char_t *cFilename = (char*)attr.value();
-
-					fullpath = m_fpXMLFile.path + string(cFilename); // The extension is already included in cFilename
-
-				}
-				else {
-					mexErrMsgOriginAndTxt(ptModule, "Could not find attribute 'File' in Continue.\n");
-				}
-			
-			}
-		} // root
-	
-		FINISH:
-	
-		//---------------------------------------------------------------------
-		// Load next xml file is necessary
-		//---------------------------------------------------------------------
-		if (fullpath.size()>0) {
+			string fullpath = m_fpXMLFile.path + m_fpXMLFile.name + m_fpXMLFile.ext;
 
 			if (!m_doc.load_file(fullpath.c_str())) {
-				mexErrMsgOriginAndTxt(ptModule, "Error loading next xml file: \n", fullpath.c_str());
+				mexErrMsgOriginAndTxt(ptModule, "Error loading xml file.\n");
 			}
-			else {
-				//PRINT("%s: Loading next XML file: %s.\n", ptModule, fullpath.c_str());
-				// Jump back and parse the next file
-				goto START;
-			}
-		}
-	
-		//---------------------------------------------------------------------
-		// Check if the needed data is present                              
-		//--------------------------------------------------------------------- 
-		if (m_lGradientShapeLength == 0)
-			mexErrMsgOriginAndTxt(ptModule,"Could not find any gradient DSP information!\n");
 
-		if (m_lRXEvents == 0)
-			mexErrMsgOriginAndTxt(ptModule,"Could not find any receiver DSP information!\n");
+			//---------------------------------------------------------------------
+			// Read event blocks
+			//---------------------------------------------------------------------
+		START:
+
+			// Delete full path for now. If an additional xml file need to be loaded
+			// then it will be set during the next for-loop
+			fullpath.clear();
+
+			// Load root
+			root = m_doc.child("NUMARIS4_DSP_SIMULATION");
+
+			// Loop through children of NUMARIS4_DSP_SIMULATION
+			for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling())
+			{
+
+				// Convert name to string
+				std::string sNodeName(node.name());
+
+				//---------------------------------------------------------------------
+				// Event block
+				//---------------------------------------------------------------------
+				if (sNodeName.compare("EventBlock") == 0) {
+
+					//---------------------------------------------------------------------
+					// GC
+					//---------------------------------------------------------------------
+					pugi::xml_node nodeGC = node.child("GC");
+
+					// Loop through children of GC
+					for (pugi::xml_node child = nodeGC.first_child(); child; child = child.next_sibling())
+					{
+
+						// Convert name to string
+						std::string sChildName(child.name());
+
+						if (sChildName.compare("Control") == 0) {
+
+							// Get attribute 'Ticks'
+							if (pugi::xml_attribute attr = child.attribute("Ticks")) // attribute really exists
+							{
+								// Get number of samples
+								m_lGradientShapeLength += attr.as_int();
+							}
+
+							// Check ig control has a child called 'Trigger'
+							for (pugi::xml_node childControl = child.first_child(); childControl; childControl = childControl.next_sibling())
+							{
+								// Convert name to string
+								std::string sChildName2(childControl.name());
+
+								if (sChildName2.compare("Trigger") == 0) {
+
+									// Get text 
+									string sTriggerType = childControl.text().as_string();
+
+									if (sTriggerType.compare("TX") == 0) {
+										m_lTXEvents++;
+									}
+								}
+
+								if (sChildName2.compare("Sync") == 0) {
+
+									// Only consider EXT_TRIGGER
+									if (pugi::xml_attribute attr = childControl.attribute("Ext"))
+									{
+										// One could also differentiate between EXTR0 and EXTR1 if needed
+										// by getting the attribute value
+										m_lTrigEvents++;
+									}
+
+								}
+
+							}
+
+						}
+						else if (sChildName.compare("Halt") == 0) {
+							if ((m_uiVerbose & DISPLAY_ADVANCED) == DISPLAY_ADVANCED) {
+								PRINT("%s: Halt instruction received.\n", ptModule);
+							}
+							goto FINISH;
+						}
+					}
+
+					//---------------------------------------------------------------------
+					// RX
+					//---------------------------------------------------------------------
+					pugi::xml_node nodeRX = node.child("RX");
+
+					// Loop through children of RX
+					for (pugi::xml_node child = nodeRX.first_child(); child; child = child.next_sibling())
+					{
+
+						// Convert name to string
+						std::string sChildName(child.name());
+
+						if (sChildName.compare("Readout") == 0) {
+
+							// Get attribute 'NumberOfPoints'
+							if (pugi::xml_attribute attr = child.attribute("NumberOfPoints")) // attribute really exists
+							{
+
+								pugi::xml_node header = child.child("Info").child("Header");
+								pugi::xml_attribute evalMask = header.attribute("aulEvalInfoMask0");
+
+								unsigned long ulEvalInfoMask = evalMask.as_uint();
+
+								// Only consider imaging scans
+								if (
+									//	   (ulEvalInfoMask & MdhBitField::MDH_FLAG_ONLINE) == MdhBitField::MDH_FLAG_ONLINE &&
+									//	 (ulEvalInfoMask & MdhBitField::MDH_FLAG_PHASCOR) != MdhBitField::MDH_FLAG_PHASCOR &&
+									//	 (ulEvalInfoMask & MdhBitField::MDH_FLAG_NOISEADJSCAN) != MdhBitField::MDH_FLAG_NOISEADJSCAN &&
+									(ulEvalInfoMask & MdhBitField::MDH_FLAG_ACQEND) != MdhBitField::MDH_FLAG_ACQEND) {
+
+									// Get number of samples
+									long Samples = attr.as_int();
+
+									// Set ADC samples if was not set yet
+									if (ADCSamples == -1)
+										ADCSamples = Samples;
+
+									//if (ADCSamples != Samples)
+									//	mexErrMsgOriginAndTxt(ptModule,"Number of ADC samples must be the same for all acqusitions. (Possible reason: Seperate Ref scans have an oversampling factor equal to 1.)\n");
+
+									// Add samples to counter
+									m_lRXSampleLength += Samples;
+									m_lRXEvents++;
+
+								} // Flag check
+							} // Attribute Number of points
+
+						} // Readout
+
+					} // Loop over children
+
+				} // Loop over Event blocks
+				else if (sNodeName.compare("Continue") == 0) {
+
+					// Get attribute 'File'
+					if (pugi::xml_attribute attr = node.attribute("File")) // attribute really exists
+					{
+						// Get next file name
+						pugi::char_t *cFilename = (char*)attr.value();
+
+						fullpath = m_fpXMLFile.path + string(cFilename); // The extension is already included in cFilename
+
+					}
+					else {
+						mexErrMsgOriginAndTxt(ptModule, "Could not find attribute 'File' in Continue.\n");
+					}
+
+				}
+			} // root
+
+		FINISH:
+
+			//---------------------------------------------------------------------
+			// Load next xml file is necessary
+			//---------------------------------------------------------------------
+			if (fullpath.size() > 0) {
+
+				if (!m_doc.load_file(fullpath.c_str())) {
+					mexErrMsgOriginAndTxt(ptModule, "Error loading next xml file: \n", fullpath.c_str());
+				}
+				else {
+					//PRINT("%s: Loading next XML file: %s.\n", ptModule, fullpath.c_str());
+					// Jump back and parse the next file
+					goto START;
+				}
+			}
+
+			//---------------------------------------------------------------------
+			// Check if the needed data is present                              
+			//--------------------------------------------------------------------- 
+			if (m_lGradientShapeLength == 0)
+				mexErrMsgOriginAndTxt(ptModule, "Could not find any gradient DSP information!\n");
+
+			if (m_lRXEvents == 0)
+				mexErrMsgOriginAndTxt(ptModule, "Could not find any receiver DSP information!\n");
+		}
+		else {
+
+			//---------------------------------------------------------------------
+			// Get size of gradient shape
+			//---------------------------------------------------------------------
+			string sfileName;
+			double dHoriDelta = 0.0;
+			double dVertFactor = 0.0;
+			long lLengthGY = 0;
+			long lLengthGZ = 0;
+
+
+			// GX
+			sfileName = m_sDSVFolderPath + "\\GRX.dsv";
+			{
+				ifstream in(sfileName.c_str());
+
+				if (!in) {
+					cout << "Cannot open input file: " << sfileName << endl;
+					mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				}
+				this->getDSVParams(in, m_lGradientShapeLength, dHoriDelta, dVertFactor);
+			}
+
+			// GY
+			sfileName = m_sDSVFolderPath + "\\GRY.dsv";
+			{
+				ifstream in(sfileName.c_str());
+
+				if (!in) {
+					cout << "Cannot open input file: " << sfileName << endl;
+					mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				}
+				this->getDSVParams(in, lLengthGY, dHoriDelta, dVertFactor);
+			}
+
+			// GZ
+			sfileName = m_sDSVFolderPath + "\\GRZ.dsv";
+			{
+				ifstream in(sfileName.c_str());
+
+				if (!in) {
+					cout << "Cannot open input file: " << sfileName << endl;
+					mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				}
+				this->getDSVParams(in, lLengthGZ, dHoriDelta, dVertFactor);
+			}
+
+			if (m_lGradientShapeLength != lLengthGY)
+				mexErrMsgOriginAndTxt(ptModule, "The length of GX and GY are not consistent.\n");
+
+			if (m_lGradientShapeLength != lLengthGZ)
+				mexErrMsgOriginAndTxt(ptModule, "The length of GX and GZ are not consistent.\n");
+
+
+			//---------------------------------------------------------------------
+			// Get file Parameters
+			//---------------------------------------------------------------------
+			sfileName = m_sDSVFolderPath + "\\INF.dsv";
+			{
+				ifstream in(sfileName.c_str());
+
+				if (!in) {
+					cout << "Cannot open input file: " << sfileName << endl;
+					mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				}
+				this->getInfoParams(in, m_lRXSampleLength, m_lRXEvents);
+			}
+
+
+		}
+
+
 
 		//---------------------------------------------------------------------
 		// Display some information                              
@@ -1369,7 +1452,7 @@ namespace SEQSIM
 		 
 			 // Check indices
 			 if(x0<0)
-				 mexErrMsgOriginAndTxt(ptModule,"DSP::interpolateData(): Invalid array index.\n");
+				 mexErrMsgOriginAndTxt(ptModule,"Invalid array index.\n");
 
 			 if (x1 >= m_lConvolutionlLength)
 				 x1 = m_lConvolutionlLength - 1;
@@ -1650,63 +1733,136 @@ namespace SEQSIM
 
 		 static const char *ptModule = { "DSP::readGCShapes(): " };
 
-		 //---------------------------------------------------------------------
-		 // Read shapes
-		 //---------------------------------------------------------------------
-		 pugi::xml_node shapes = m_doc.child("NUMARIS4_DSP_SIMULATION").child("Shapes");
-
-		 // Loop through shapes
-		 for (pugi::xml_node nodeShape = shapes.first_child(); nodeShape; nodeShape = nodeShape.next_sibling())
-		 {
-
-			 // Convert name to string
-			 std::string sShapeName(nodeShape.name());
-
+		 if (m_sDSVFolderPath.size() == 0) {
 			 //---------------------------------------------------------------------
-			 // TX shapes
+			 // Read shapes
 			 //---------------------------------------------------------------------
-			 if (sShapeName.compare("TXShape") == 0) {
-				 // Nothing to do
-			 }
-			 //---------------------------------------------------------------------
-			 // GC Shape
-			 //---------------------------------------------------------------------
-			 else if (sShapeName.compare("GCShape") == 0) {
+			 pugi::xml_node shapes = m_doc.child("NUMARIS4_DSP_SIMULATION").child("Shapes");
 
-				 long lSamples;
+			 // Loop through shapes
+			 for (pugi::xml_node nodeShape = shapes.first_child(); nodeShape; nodeShape = nodeShape.next_sibling())
+			 {
 
-				 // Get attribute 'Samples'
-				 if (pugi::xml_attribute attr = nodeShape.attribute("Samples")) // attribute really exists
-				 {
-					 // Get number of samples
-					 lSamples = attr.as_int();
+				 // Convert name to string
+				 std::string sShapeName(nodeShape.name());
 
-					 // Create vector for current shape
-					 vector<double> vRow;
-					 vRow.reserve(lSamples);
+				 //---------------------------------------------------------------------
+				 // TX shapes
+				 //---------------------------------------------------------------------
+				 if (sShapeName.compare("TXShape") == 0) {
+					 // Nothing to do
+				 }
+				 //---------------------------------------------------------------------
+				 // GC Shape
+				 //---------------------------------------------------------------------
+				 else if (sShapeName.compare("GCShape") == 0) {
 
-					 // Collect all data
-					 for (pugi::xml_node data = nodeShape.first_child(); data; data = data.next_sibling()) {
-						 vRow.push_back(data.text().as_double());
+					 long lSamples;
+
+					 // Get attribute 'Samples'
+					 if (pugi::xml_attribute attr = nodeShape.attribute("Samples")) // attribute really exists
+					 {
+						 // Get number of samples
+						 lSamples = attr.as_int();
+
+						 // Create vector for current shape
+						 vector<double> vRow;
+						 vRow.reserve(lSamples);
+
+						 // Collect all data
+						 for (pugi::xml_node data = nodeShape.first_child(); data; data = data.next_sibling()) {
+							 vRow.push_back(data.text().as_double());
+						 }
+
+						 // Append to vector to vector
+						 m_vGCShapes.push_back(vRow);
+
+					 }
+					 else {
+						 mexErrMsgOriginAndTxt(ptModule, "Could not find attribute 'Samples' in GCShape.");
 					 }
 
-					 // Append to vector to vector
-					 m_vGCShapes.push_back(vRow);
-
 				 }
+				 //---------------------------------------------------------------------
+				 // Otherwise
+				 //---------------------------------------------------------------------
 				 else {
-					 mexErrMsgOriginAndTxt(ptModule, "Could not find attribute 'Samples' in GCShape.");
+					 mexErrMsgOriginAndTxt(ptModule, "Error unknown shape name.");
 				 }
 
+			 } // loop Shapes children
+		 }
+		 else {
+
+			 string sfileName;
+			 double dHoriDelta = 0.0;
+			 double dVertFactor = 0.0;
+			 long lLengthGY = 0;
+			 long lLengthGZ = 0;
+
+			 // GX
+			 sfileName = m_sDSVFolderPath + "\\GRX.dsv";
+			 {
+				 ifstream in(sfileName.c_str());
+
+				 if (!in) {
+					 cout << "Cannot open input file: " << sfileName << endl;
+					 mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				 }
+
+				 // Get the gradient shape
+				 this->getDSV(in, m_afMULTI_PURPOSEX);
+				 in.close();
+
 			 }
-			 //---------------------------------------------------------------------
-			 // Otherwise
-			 //---------------------------------------------------------------------
-			 else {
-				 mexErrMsgOriginAndTxt(ptModule, "Error unknown shape name.");
+			 
+			 // GY
+			 sfileName = m_sDSVFolderPath + "\\GRY.dsv";
+			 {
+				 ifstream in(sfileName.c_str());
+
+				 if (!in) {
+					 cout << "Cannot open input file: " << sfileName << endl;
+					 mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				 }
+				 
+				 // Get the gradient shape
+				 this->getDSV(in, m_afMULTI_PURPOSEY);
+				 in.close();
 			 }
 
-		 } // loop Shapes children
+			 // GZ
+			 sfileName = m_sDSVFolderPath + "\\GRZ.dsv";
+			 {
+				 ifstream in(sfileName.c_str());
+
+				 if (!in) {
+					 cout << "Cannot open input file: " << sfileName << endl;
+					 mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				 }
+				 
+				 // Get the gradient shape
+				 this->getDSV(in, m_afMULTI_PURPOSEZ);
+				 in.close();
+			 }
+
+
+			 //---------------------------------------------------------------------
+			// Get file Parameters
+			//---------------------------------------------------------------------
+			 sfileName = m_sDSVFolderPath + "\\INF.dsv";
+			 {
+				 ifstream in(sfileName.c_str());
+
+				 if (!in) {
+					 cout << "Cannot open input file: " << sfileName << endl;
+					 mexErrMsgOriginAndTxt(ptModule, "Check provided folder. DSV file needs to be named: GRX.dsv, GRY.dsv, GRZ.dsv, and INF.dsv. \n");
+				 }
+		
+				 this->getInfo(in);
+			 }
+			 		
+		 }
 	 }
 
 
@@ -2329,7 +2485,7 @@ namespace SEQSIM
 		// Scancounter should start at zero
 
 		static const char *ptModule = { "DSP::applyPhaseModulation(): " };
-	     
+			     
 		 if (m_bEccCompensationAvailable) {
          
 			 // Checks
@@ -2353,8 +2509,7 @@ namespace SEQSIM
 			 else {
 				 lExpectedNumberOfSamples = m_uiRXEventLength[ulScanCounter] - m_uiRXEventLength[ulScanCounter-1];
 			 }
-
-         
+			 
 			 if (numberOfSamples != lExpectedNumberOfSamples) {
 				 static char tLine[1000];
 				 tLine[0] = '\0';
@@ -2365,7 +2520,6 @@ namespace SEQSIM
 			 long lStartIndex = 0;
 			 if (ulScanCounter > 0)
 				 lStartIndex = m_uiRXEventLength[ulScanCounter-1];
-
 
 			 // Apply phase modulation	
 			 for (long i = 0; i < numberOfSamples; i++) {
@@ -2407,6 +2561,269 @@ namespace SEQSIM
 		 
 	 }
 
+	 void DSP::getInfoParams(ifstream &in, long &lRXSampleLength, long &lRXEvents) {
+
+		 string line;
+
+		 while (std::getline(in, line))
+		 {
+			 if (line.find("adc MeasHeader") != std::string::npos) {
+				 lRXEvents++;
+				 continue;
+			 }
+
+			 if (line.find("ushSamplesInScan") != std::string::npos) {
+
+				 char * pch;
+				 pch = strtok((char *)line.c_str(), ":;");
+				 pch = strtok(NULL, "=;");
+
+				 lRXSampleLength += stod(pch);
+			 }
+		 }
+
+		 // The last RX event can be disregarded. It has zero samples
+		 lRXEvents--;
+
+		 in.clear();
+		 in.seekg(0);
+
+	 };
+
+	 
+
+	 void DSP::getDSVParams(ifstream &in, long &lSamples, double &dHoriDelta, double &dVertFactor) {
+		 
+		 string line;
+		 bool bStop = false;
+		 while (!bStop && std::getline(in, line))
+		 {
+
+			 char * pch;
+			 pch = strtok((char *)line.c_str(), "=");
+
+			 while (pch != NULL)
+			 {
+				 if (strcmp(pch, "SAMPLES") == 0) {
+
+					 // Get value
+					 pch = strtok(NULL, "=");
+
+					 lSamples = stoi(pch);
+
+				 }
+				 else if (strcmp(pch, "HORIDELTA") == 0) {
+
+					 // Get value
+					 pch = strtok(NULL, "=");
+
+					 dHoriDelta = stod(pch);
+
+				 }
+				 else if (strcmp(pch, "VERTFACTOR") == 0) {
+
+					 // Get value
+					 pch = strtok(NULL, "=");
+
+					 dVertFactor = 1.0 / stod(pch);
+
+				 }
+				 else if (strcmp(pch, "[VALUES]") == 0) {
+
+					 bStop = true;
+					 break;
+				 }
+
+				 pch = strtok(NULL, "=");
+			 }
+
+		 }
+	 }
+
+
+	 void DSP::getInfo(ifstream &in) {
+		 static const char *ptModule = { "DSP::getInfo(): " };
+
+		 long lRXSampleLength;
+		 long lRXEvents;
+		 this->getInfoParams(in, lRXSampleLength, lRXEvents);
+
+		 //---------------------------------------------------------------------
+		 // Read the values
+		 //---------------------------------------------------------------------
+		 vector<double> vDSV;
+		 string line;
+
+		 
+		 long lStartTime;
+		 double dADCDuration;
+		 long lADCSamples;
+
+		 m_lCurrentRXSampleLength = 0;
+
+		 long cRXEvent = 0;
+		 while (std::getline(in, line))
+		 {
+	
+			 if (line.find("MeasHeader") != std::string::npos) {
+				 
+				 char * pch;
+				 pch = strtok((char *)line.c_str(), " ");
+				 pch = strtok(NULL, " ");
+
+				 // Start time
+				 pch = strtok(NULL, " ");
+				 lStartTime = stod(pch);
+
+				 // ADC duration
+				 pch = strtok(NULL, " ");
+				 dADCDuration = stod(pch);				 
+			
+			 }
+
+			 if (line.find("ushSamplesInScan") != std::string::npos) {
+
+				 char * pch;
+				 pch = strtok((char *)line.c_str(), ":;");
+				 pch = strtok(NULL, "=;");
+
+				 lADCSamples = stoi(pch);
+				 
+				 if (lADCSamples > 0 && cRXEvent < m_lRXEvents) {
+
+					 double dDwellTime = dADCDuration / lADCSamples;
+
+					 for (long t = 0; t < lADCSamples; t++) {
+						 if (m_lCurrentRXSampleLength + t < m_lRXSampleLength) {
+							 m_adRXTimes[m_lCurrentRXSampleLength + t] = ((double)lStartTime + dDwellTime * (double)t)*1e-6; // Final unit is seconds
+						 }
+					 }
+
+					 // Update shape length
+					 m_lCurrentRXSampleLength += lADCSamples;
+
+					 // Set number of samples per ADC
+					 m_uiRXEventLength[cRXEvent] = m_lCurrentRXSampleLength;
+
+					 
+
+					 // Update RX event counter
+					 cRXEvent++;
+				 }
+
+			 }
+
+		 }
+
+		 		 
+	 }
+
+
+	 bool DSP::getDSV(ifstream &in, double *y) {
+
+		 static const char *ptModule = { "DSP::getDSV(): " };
+
+		 //---------------------------------------------------------------------
+		 // Get file name
+		 //---------------------------------------------------------------------
+		 if (!in) {
+			 mexErrMsgOriginAndTxt(ptModule, "Cannot open input file stream. \n");
+		 }
+
+		 //---------------------------------------------------------------------
+		 // Get file Parameters
+		 //---------------------------------------------------------------------
+		 long lSamples = 0;
+		 double dHoriDelta = 0.0;
+		 double dVertFactor = 0.0;
+
+		 this->getDSVParams(in, lSamples, dHoriDelta, dVertFactor);
+
+		 //---------------------------------------------------------------------
+		 // Read the values
+		 //---------------------------------------------------------------------
+		 vector<double> vDSV;
+		 string line;
+		 while (std::getline(in, line))
+		 {
+
+			 if (line.size()) {
+				 vDSV.push_back(stod(line));
+			 }
+			 else {
+				 break;
+			 }
+		 }
+
+		 //---------------------------------------------------------------------
+		 // Compute shape
+		 //---------------------------------------------------------------------
+		 // Set length of DSV file
+		 long lNdsv = vDSV.size();
+
+		 // Init gradient shape
+		 for (int n = 0; n < lSamples; n++) {
+			 y[n] = 0;
+		 }
+
+		 // Init counters
+		 long i = 0;
+		 long n = 0;
+
+		 // First sample 
+		 y[0] = vDSV.at(0);
+		 double prev = vDSV.at(0);
+
+		 while (i < lNdsv - 1 && n < lSamples - 2)
+		 {
+			 i++;
+			 y[n + 1] = y[n] + vDSV.at(i);
+
+			 if (vDSV.at(i) != prev) {
+				 n = n + 1;
+				 prev = vDSV.at(i);
+			 }
+			 else {
+				 long nrep = vDSV.at(i + 1);
+				 if (nrep == 0) {
+					 i = i + 2;
+					 n = n + 1;
+				 }
+				 else {
+					 n = n + 1;
+
+
+					 for (int a = 0; a < nrep; a++) {
+						 y[n + 1 + a] = y[n] + (a + 1)*prev;
+					 }
+
+					 n = n + nrep;
+					 i = i + 2;
+				 }
+
+				 if (i < lNdsv) {
+					 y[n + 1] = y[n] + vDSV.at(i);
+					 n = n + 1;
+					 prev = vDSV.at(i);
+				 }
+			 }
+
+		 }
+
+		 //---------------------------------------------------------------------
+		 // Scaling
+		 //---------------------------------------------------------------------
+		 for (int n = 0; n < lSamples; n++) {
+			 y[n] = y[n]*dVertFactor;
+		 }
+
+		 return true;
+	 }
+
+
+
+
+
 	//*******************************************************************
 	// RUN()                                                             
 	//******************************************************************* 
@@ -2432,16 +2849,20 @@ namespace SEQSIM
 			PRINT("#####################################\n\n");
 		}
 
+
 		//---------------------------------------------------------------------
 		// Open file                                                         
 		//---------------------------------------------------------------------
-		this->openFile();
+		// DSV folder has not been set / check if xml file is present
+		if (m_sDSVFolderPath.size() == 0) {
+			this->openFile();
+		}
 
 		//---------------------------------------------------------------------
 		// Calculate memory requirement (set m_lGradientShapeLength)                              
 		//---------------------------------------------------------------------
 		this->calcMemoryRequirement();
-		
+
 		//---------------------------------------------------------------------
 		// Determine largest decay constant (set m_lExponentialLength)                                              
 		//---------------------------------------------------------------------
@@ -2456,16 +2877,17 @@ namespace SEQSIM
 			this->allocateMemory();
 		#endif
 
-
 		//---------------------------------------------------------------------
 		// Read shapes                                                 
 		//---------------------------------------------------------------------
 		this->readGCShapes();
-
+			
 		//---------------------------------------------------------------------
 		// Run DSP instructions                                                   
 		//---------------------------------------------------------------------
-		this->runInstructions();
+		if (m_sDSVFolderPath.size() == 0) {
+			this->runInstructions();
+		}
 
 		//---------------------------------------------------------------------
 		// Calculate integral of gradient                                           
@@ -2536,8 +2958,9 @@ namespace SEQSIM
 		// Interpolate to RX events                      
 		//---------------------------------------------------------------------
 		if (m_lOutputMode == OutputMode::INTERPOLATED_TO_RX) {
+						
 			this->interpolateData(m_afMULTI_PURPOSEX, m_afMULTI_PURPOSE_INTERPX);
-
+					   
 			if (m_lDataType != DataType::EDDYPHASE) {
 				this->interpolateData(m_afMULTI_PURPOSEY, m_afMULTI_PURPOSE_INTERPY);
 				this->interpolateData(m_afMULTI_PURPOSEZ, m_afMULTI_PURPOSE_INTERPZ);
@@ -2574,6 +2997,8 @@ namespace SEQSIM
 
 		if (m_lOutputMode == OutputMode::INTERPOLATED_TO_RX && m_lDataType == DataType::EDDYPHASE) {
 			m_bEccCompensationAvailable = true;
-		}
+		}	
 	}
+
+
 }

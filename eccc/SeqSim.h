@@ -211,12 +211,15 @@ namespace SEQSIM
 		// Set file name of xml file to be read
 		void setFileName(const char *pFileName);
 
+		// Set path to dsp folder
+		void setDSVFolderPath(const char *pFolderPath);
+
 		// Read xml file and simulate the DSP instructions 
-#ifdef MATLAB_MEX_FILE 
-		void run(mxArray *plhs[]);
-#else
-		void run();
-#endif
+		#ifdef MATLAB_MEX_FILE 
+			void run(mxArray *plhs[]);
+		#else
+			void run();
+		#endif
 
 		// Set the amount of information printed to the console (see enum Verbose in Type.h)
 		void setVerboseMode(int verbose);
@@ -316,6 +319,17 @@ namespace SEQSIM
 		// Read arbitrary gradient shapes
 		void readGCShapes();
 
+		// Get DSV data
+		bool getDSV(ifstream &in, double *y);
+
+		// Get dsp parameters
+		void getDSVParams(ifstream &in, long &lSamples, double &dHoriDelta, double &dVertFactor);
+
+		// Get RX parameters
+		void getInfoParams(ifstream &in, long &lRXSampleLength, long &lRXEvents);
+
+		// Get RX parameters
+		void getInfo(ifstream &in);
 
 		//*******************************************************************
 		// PROPERTIES                                                        
@@ -324,6 +338,8 @@ namespace SEQSIM
 		// Text file name
 		FileParts m_fpXMLFile;
 
+		// Path to DSV folder
+		string m_sDSVFolderPath;
 
 		//---------------------------------------------------------------------
 		// Dimensions & Counters
