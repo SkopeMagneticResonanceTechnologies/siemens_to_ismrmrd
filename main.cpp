@@ -803,11 +803,10 @@ int main(int argc, char *argv[] )
 
     // Free memory used for MeasurementHeaderBuffers
 
-	// For Cartesian imaging, we do not care about segments
-	ISMRMRD::TrajectoryType trajType = header.encoding.at(0).trajectory;
-	if (trajType == ISMRMRD::TrajectoryType::CARTESIAN) {
+	// For EPI, we do not care about segments
+	if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
 		ignore_Segments = true;
-	} 
+	}
 
 
 	//---------------------------------------------------------------------
