@@ -804,7 +804,7 @@ int main(int argc, char *argv[] )
     // Free memory used for MeasurementHeaderBuffers
 
 	// For EPI, we do not care about segments
-	if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
+	if (header.encoding.at(0).trajectory == ISMRMRD::TrajectoryType::EPI) {
 		ignore_Segments = true;
 	}
 
@@ -1432,31 +1432,28 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 	 double dADCDuration = (double)dwell_time_0 / 1000.0 * header.encoding[0].encodedSpace.matrixSize.x;
 	 double dMomentRO = (double)header.encoding[0].encodedSpace.matrixSize.x / dReadoutOversampling / (fovRead_recon_mm*LarmorConstant_Hz_Per_T)*1.0e12;
 
-
-	 if(!header.sequenceParameters)
-		 std::cerr << "Pointer to sequenceParameters is NULL" << std::endl;
-
-	 if (!header.sequenceParameters.get().sequence_type)
-		 std::cerr << "Pointer to sequenceParameters.sequence_type is NULL" << std::endl;
-
-	
-	 if (header.sequenceParameters.get().sequence_type.get().compare("EPI") == 0) {
+	 if (header.encoding[0].trajectory == ISMRMRD::TrajectoryType::EPI) {
 	 
-		long lRegridRampupTime = 0;
-		long lRegridFlattopTime = 0; 
-		long lRegridRampdownTime = 0;
-		long lRegridDelaySamplesTime = 0;
+		long lRegridRampupTime = -1;
+		long lRegridFlattopTime = -1; 
+		long lRegridRampdownTime = -1;
+		long lRegridDelaySamplesTime = -1;
+		long lRegridMode = 0;
 
 		if (!header.encoding.at(0).trajectoryDescription)
 			std::cerr << "Pointer to header.encoding.at(0).trajectoryDescription is NULL. Have you chosen the right style sheet?" << std::endl;
 
 		ISMRMRD::TrajectoryDescription trajDes = header.encoding.at(0).trajectoryDescription.get(); 
 
-		
+		// Get regrid mode
 		for (int cParam = 0; cParam < trajDes.userParameterLong.size(); cParam++) {
 
 			std::string name = trajDes.userParameterLong.at(cParam).name;
 			long value = trajDes.userParameterLong.at(cParam).value;
+
+			if (name.compare("regridMode") == 0) {
+				lRegridMode = value;
+			}
 
 			if (name.compare("rampUpTime") == 0) {
 				lRegridRampupTime = value;
@@ -1472,17 +1469,44 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 			}
 		}
 
-		long GROTotalTime = lRegridRampupTime + lRegridFlattopTime + lRegridRampdownTime;
-		long lDuraRO = lRegridRampupTime + lRegridFlattopTime;
-		double dDeltaRU = (double)std::min(lRegridDelaySamplesTime, lRegridRampupTime);
-		double dDeltaRD = std::min((double)GROTotalTime - (lRegridDelaySamplesTime + dADCDuration), (double)lRegridRampupTime);
-		double dDeltaF1 = std::max((double)lRegridDelaySamplesTime - lRegridRampupTime, 0.0);
-		double dDeltaF2 = std::max((double)lDuraRO - (lRegridDelaySamplesTime + dADCDuration), 0.0);
+		// No regridding
+		if (lRegridMode == 0) {
+			dAmplRO = dMomentRO / dADCDuration;
+		}
+		else if (lRegridMode == 2) { // Trapezoidal
 
-		double dFactor = (double)lDuraRO - dDeltaF1 - dDeltaF2
-			- 0.5*(dDeltaRU*dDeltaRU + dDeltaRD * dDeltaRD) / (double)lRegridRampupTime;
 
-		dAmplRO = dMomentRO / dFactor;
+			if (lRegridRampupTime == -1) {
+				std::cerr << "lRegridRampupTime has not been set. Have you chosen the right style sheet?" << std::endl;
+			}
+
+			if (lRegridFlattopTime == -1) {
+				std::cerr << "lRegridFlattopTime has not been set. Have you chosen the right style sheet?" << std::endl;
+			}
+
+			if (lRegridRampdownTime == -1) {
+				std::cerr << "lRegridRampdownTime has not been set. Have you chosen the right style sheet?" << std::endl;
+			}
+
+			if (lRegridDelaySamplesTime == -1) {
+				std::cerr << "lRegridDelaySamplesTime has not been set. Have you chosen the right style sheet?" << std::endl;
+			}
+
+			long GROTotalTime = lRegridRampupTime + lRegridFlattopTime + lRegridRampdownTime;
+			long lDuraRO = lRegridRampupTime + lRegridFlattopTime;
+			double dDeltaRU = (double)std::min(lRegridDelaySamplesTime, lRegridRampupTime);
+			double dDeltaRD = std::min((double)GROTotalTime - (lRegridDelaySamplesTime + dADCDuration), (double)lRegridRampupTime);
+			double dDeltaF1 = std::max((double)lRegridDelaySamplesTime - lRegridRampupTime, 0.0);
+			double dDeltaF2 = std::max((double)lDuraRO - (lRegridDelaySamplesTime + dADCDuration), 0.0);
+
+			double dFactor = (double)lDuraRO - dDeltaF1 - dDeltaF2
+				- 0.5*(dDeltaRU*dDeltaRU + dDeltaRD * dDeltaRD) / (double)lRegridRampupTime;
+
+			dAmplRO = dMomentRO / dFactor;
+		}
+		else { // Sinusodial
+			std::cerr << "Sinusodial readout is not yet supported." << std::endl;
+		}
 
 	 }
 	 else {

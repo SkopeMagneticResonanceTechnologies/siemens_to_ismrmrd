@@ -570,6 +570,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                         </flipAngle_deg>
                     </xsl:if>
                 </xsl:for-each>
+				 <!--It is a spin-echo sequence-->
                 <sequence_type>SE</sequence_type>
                 <xsl:if test="siemens/YAPS/lEchoSpacing">
                     <echo_spacing>

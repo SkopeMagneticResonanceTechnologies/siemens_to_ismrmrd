@@ -634,7 +634,7 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                 </parallelImaging>
 				
 				<echoTrainLength>
-					<xsl:value-of select="ceiling(1.0 * siemens/YAPS/iNoOfFourierLines div $accelerationFactor1)"/>
+					<xsl:value-of select="siemens/MEAS/sFastImaging/lEPIFactor"/>					
 				</echoTrainLength>
 						
             </encoding>
@@ -670,24 +670,8 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
                         </flipAngle_deg>
                     </xsl:if>
                 </xsl:for-each>
-                <xsl:choose>
-					<xsl:when test="siemens/MEAS/ucSequenceType">
-						<sequence_type>
-							<xsl:choose>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 1">Flash</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 2">SSFP</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 4">EPI</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 8">TurboSpinEcho</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 16">ChemicalShiftImaging</xsl:when>
-								<xsl:when test="siemens/MEAS/ucSequenceType = 32">FID</xsl:when>
-								<xsl:otherwise>Unknown</xsl:otherwise>
-							</xsl:choose>
-						</sequence_type>
-					</xsl:when>
-					<xsl:otherwise>
-						<sequence_type>Unknown</sequence_type>
-					</xsl:otherwise>
-				</xsl:choose>
+                <!-- It is a gradient-recalled echo -->	
+				<sequence_type>GRE</sequence_type>
                 <xsl:if test="siemens/YAPS/lEchoSpacing">
                     <echo_spacing>
                         <xsl:value-of select="siemens/YAPS/lEchoSpacing div 1000.0" />
