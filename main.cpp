@@ -114,6 +114,25 @@ void readScanHeader(std::ifstream &siemens_dat, bool VBFILE, sMDH &mdh, sScanHea
 std::vector<ChannelHeaderAndData>
         readChannelHeaders(std::ifstream &siemens_dat, bool VBFILE, const sScanHeader &scanhead);
 
+
+void err(void *ctx, const char *msg, ...)
+{
+	va_list args;
+	va_start(args, msg);
+	char *val = va_arg(args, char*);
+	cout<< "Schema error: " << val << endl;
+	va_end(args);
+}
+
+void warn(void *ctx, const char *msg, ...)
+{
+	va_list args;
+	va_start(args, msg);
+	char *val = va_arg(args, char*);
+	cout << "Schema warning: " << val << endl;
+	va_end(args);
+}
+
 int xml_file_is_valid(std::string& xml, std::string& schema_file)
 {
     xmlDocPtr doc;
@@ -155,8 +174,14 @@ int xml_file_is_valid(std::string& xml, std::string& schema_file)
         return -4;
     }
 
+	xmlSchemaSetValidErrors(valid_ctxt, (xmlSchemaValidityErrorFunc)err, (xmlSchemaValidityWarningFunc)warn, parser_ctxt);
+
+
+
+
     //Validate a document tree in memory. Takes a schema validation context and a parsed document tree
     int is_valid = (xmlSchemaValidateDoc(valid_ctxt, doc) == 0);
+
     xmlSchemaFreeValidCtxt(valid_ctxt);
     xmlSchemaFree(schema);
     xmlSchemaFreeParserCtxt(parser_ctxt);
@@ -1956,6 +1981,7 @@ std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, st
 
     if (xml_file_is_valid(xml_result, schema_file_name_content) <= 0)
     {
+
         std::stringstream sstream;
         sstream << "Generated XML is not valid according to the ISMRMRD schema";
         throw std::runtime_error(sstream.str());
@@ -1965,7 +1991,6 @@ std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, st
             std::ofstream o("processed.xml");
             o.write(xml_result.c_str(), xml_result.size());
         }
-
 
     }
 
