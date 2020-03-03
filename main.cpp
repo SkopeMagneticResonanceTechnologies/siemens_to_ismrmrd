@@ -48,7 +48,9 @@ using boost::locale::conv::utf_to_utf;
 SEQSIM::DSP dsp;
 
 
-const size_t MYSTERY_BYTES_EXPECTED = 160;
+const size_t MYSTERY_BYTES_EXPECTED_VB_VD = 160;
+const size_t MYSTERY_BYTES_EXPECTED_VE = 192;
+size_t MYSTERY_BYTES_EXPECTED = 0;
 
 // defined in generated defaults.cpp
 extern void initializeEmbeddedFiles(void);
@@ -727,7 +729,7 @@ int main(int argc, char *argv[] )
     else if (ParcRaidHead.hdSize_ != 0)
     {
         //This is a VB line data file
-        std::cerr << "Only VD line files with MrParcRaidFileHeader.hdSize_ == 0 (MR_PARC_RAID_ALLDATA) supported." << std::endl;
+        std::cerr << "Only VD/VE line files with MrParcRaidFileHeader.hdSize_ == 0 (MR_PARC_RAID_ALLDATA) supported." << std::endl;
         return -1;
     }
 
@@ -806,6 +808,20 @@ int main(int argc, char *argv[] )
     {
         isVB = true;
     }
+
+	bool isVD = false;
+	if ((baseLineString.find("VD11") != std::string::npos)
+		|| (baseLineString.find("VD13") != std::string::npos))
+	{
+		isVD = true;
+	}
+
+	bool isVE = false;
+	if ((baseLineString.find("VE11") != std::string::npos)
+		|| (baseLineString.find("VE12") != std::string::npos))
+	{
+		isVE = true;
+	}
 
     std::cout << "Baseline: " << baseLineString << std::endl;
 
@@ -978,7 +994,8 @@ int main(int argc, char *argv[] )
 
     auto ismrmrd_dataset = boost::make_shared<ISMRMRD::Dataset>(ismrmrd_file.c_str(), ismrmrd_group.c_str(), true);
     //If this is a spiral acquisition, we will calculate the trajectory and add it to the individual profilesISMRMRD::NDArray<float> traj;
-    auto traj = getTrajectory(wip_double, trajectory, dwell_time_0, radial_views);
+	//auto traj = NULL;// getTrajectory(wip_double, trajectory, dwell_time_0, radial_views);
+	ISMRMRD::NDArray<float> traj;
 		
 	uint32_t last_mask = 0;
 	unsigned long int acquisitions = 1;
@@ -1110,8 +1127,16 @@ int main(int argc, char *argv[] )
 	
     ismrmrd_dataset->writeHeader(xml_config);
 
-    //Mystery bytes. There seems to be 160 mystery bytes at the end of the data.
+    //Mystery bytes. There seems to be 160 or 192 mystery bytes at the end of the data.
     std::streamoff mystery_bytes = (std::streamoff)(ParcFileEntries[measurement_number-1].off_+ParcFileEntries[measurement_number-1].len_)-siemens_dat.tellg();
+	
+	if (isVB || isVD) {
+		MYSTERY_BYTES_EXPECTED = MYSTERY_BYTES_EXPECTED_VB_VD;
+	}
+	else {
+		MYSTERY_BYTES_EXPECTED = MYSTERY_BYTES_EXPECTED_VE;
+	}
+
 
     if (mystery_bytes > 0)
     {
@@ -1127,13 +1152,14 @@ int main(int argc, char *argv[] )
         else
         {
             // Read the mystery bytes
-            char mystery_data[MYSTERY_BYTES_EXPECTED];
-            siemens_dat.read(reinterpret_cast<char*>(&mystery_data), mystery_bytes);
+            char *mystery_data = new char [MYSTERY_BYTES_EXPECTED];
+            siemens_dat.read(reinterpret_cast<char*>(mystery_data), mystery_bytes);
             //After this we have to be on a 512 byte boundary
             if (siemens_dat.tellg() % 512)
             {
                 siemens_dat.seekg(512-(siemens_dat.tellg() % 512), std::ios::cur);
             }
+			delete[]mystery_data;
         }
     }
 
@@ -2471,7 +2497,7 @@ readParcFileEntries(std::ifstream &siemens_dat, const MrParcRaidFileHeader &Parc
     }
     else
     {
-        std::cout << "VD line file detected." << std::endl;
+        std::cout << "VD or VE line file detected." << std::endl;
         for (unsigned int i = 0; i < 64; i++)
         {
             siemens_dat.read((char*)(&ParcFileEntries[i]), sizeof(MrParcRaidFileEntry));
