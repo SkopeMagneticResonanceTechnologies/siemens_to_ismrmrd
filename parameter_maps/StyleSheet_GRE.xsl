@@ -782,6 +782,15 @@
 					</userParameterLong>
 				</xsl:if>
 				
+				<!--If the multi-slice mode is 2 (interleaved), the converter will remap the  
+					slice indices to match the anatomical order -->
+				<xsl:if test="siemens/MEAS/sKSpace/ucMultiSliceMode">
+					<userParameterLong>
+						<name>multiSliceMode</name>
+						<value><xsl:value-of select="siemens/MEAS/sKSpace/ucMultiSliceMode"/></value>
+					</userParameterLong>
+				</xsl:if>
+				
 				<!-- Decide whether the converter should undo field-of-view shifts. 
 						 The undoing of FoVShift by the converter is suboptimal because of clock-shifts.
 						 The FoV shift should be disabled on the scanner.

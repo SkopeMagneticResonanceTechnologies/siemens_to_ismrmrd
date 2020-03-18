@@ -718,6 +718,15 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 						</value>
 					</userParameterLong>
 					
+					<!--If the multi-slice mode is 2 (interleaved), the converter will remap the  
+					slice indices to match the anatomical order -->
+					<xsl:if test="siemens/MEAS/sKSpace/ucMultiSliceMode">
+						<userParameterLong>
+							<name>multiSliceMode</name>
+							<value><xsl:value-of select="siemens/MEAS/sKSpace/ucMultiSliceMode"/></value>
+						</userParameterLong>
+					</xsl:if>
+					
 					<!-- Trig to ADC time: imaging scans -->
 					<userParameterDouble>
 						<name>triggerToAcquisitionDelay</name>

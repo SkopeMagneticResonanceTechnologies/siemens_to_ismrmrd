@@ -10,6 +10,7 @@
         <p><s>MEAS.sKSpace.lImagesPerSlab</s>                       <d>siemens.MEAS.sKSpace.lImagesPerSlab</d></p>
         <p><s>MEAS.sKSpace.dSliceOversamplingForDialog</s>          <d>siemens.MEAS.sKSpace.dSliceOversamplingForDialog</d></p>
         <p><s>MEAS.sKSpace.ucPhasePartialFourier</s>                <d>siemens.MEAS.sKSpace.ucPhasePartialFourier</d></p>
+		<p><s>MEAS.sKSpace.ucMultiSliceMode</s>                     <d>siemens.MEAS.sKSpace.ucMultiSliceMode</d></p>
         <p><s>MEAS.sKSpace.ucSlicePartialFourier</s>                <d>siemens.MEAS.sKSpace.ucSlicePartialFourier</d></p>
         <p><s>MEAS.sKSpace.lRadialViews</s>                         <d>siemens.MEAS.sKSpace.lRadialViews</d></p>
         <p><s>MEAS.sKSpace.uc2DInterpolation</s>                    <d>siemens.MEAS.sKSpace.uc2DInterpolation</d></p>

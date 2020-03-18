@@ -1284,6 +1284,83 @@ bool isImagingScan(const sScanHeader &scanhead) {
 
 
 
+uint16_t getAnatomicalSliceNumber(ISMRMRD::IsmrmrdHeader header, uint16_t uiAcqSliceIndex) {
+
+	// The anatomical slice order is mapped to the acquistion slice order as follows
+	//
+	//	Even number of slices
+	//
+	//		Anatomical index is even:     lAcqSliceIndex = (NSli + lAnaSliceIndex)/2
+	//
+	//		Anatomincal index is odd:     lAcqSliceIndex = (lAnaSliceIndex - 1)/2
+	//
+	//  Odd number of slice
+	//   
+	//		Anatomical index is even:     lAcqSliceIndex = lAnaSliceIndex/2
+	//
+	//		Anatomincal index is odd:     lAcqSliceIndex = (NSli + lAnaSliceIndex)/2
+	//
+	// Example: Two slices:			[1 0]
+	//			Three slices:		[0 2 1]
+	//			Four slices:		[1 3 0 2]
+	//			Five slices:		[0 2 4 1 3]
+	// The arrays represent anatomical indices
+	//
+	// In the following we want to undo this remapping
+
+	std::vector<ISMRMRD::UserParameterLong> vUserParam = header.userParameters.get().userParameterLong;
+
+	long multiSliceMode = 1; // Sequential
+	for (int cParam = 0; cParam < vUserParam.size(); cParam++) {
+
+		std::string name = vUserParam.at(cParam).name;
+		long value = vUserParam.at(cParam).value;
+
+		if (name.compare("multiSliceMode") == 0) {
+			multiSliceMode = value;
+		}
+	}
+
+	// Number of slices
+	int uiNSlices = (int) (header.encoding.at(0).encodingLimits.slice().maximum) + 1;
+
+	if (multiSliceMode == 2) { // Interleaved mode
+
+		if (uiNSlices % 2) { // Odd number of slices
+
+			// Two cases of which only one is correct
+			int iAnaSliceIndex1 = 2 * (int)uiAcqSliceIndex;
+			int iAnaSliceIndex2 = 2 * (int)uiAcqSliceIndex - (int)uiNSlices;
+
+			if (iAnaSliceIndex1 >= 0 && iAnaSliceIndex1 < uiNSlices) {
+				return iAnaSliceIndex1;
+			}
+			else {
+				return iAnaSliceIndex2;
+			}
+		}
+		else { // Even number of slices
+			
+			// Two cases of which only one is correct
+			int iAnaSliceIndex1 = 2 * (int)uiAcqSliceIndex - (int)uiNSlices;
+			int iAnaSliceIndex2 = 2 * (int)uiAcqSliceIndex + 1;
+
+			if (iAnaSliceIndex1 >= 0 && iAnaSliceIndex1 < uiNSlices) {
+				return iAnaSliceIndex1;
+			}
+			else {
+				return iAnaSliceIndex2;
+			}
+		}
+	}
+	else {
+		// Just copy original slice index
+		return uiAcqSliceIndex;
+	}
+}
+
+
+
 
 ISMRMRD::Acquisition
 getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, double dReadoutOversampling, long max_channels,
@@ -1362,7 +1439,7 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
     ismrmrd_acq.idx().repetition           = scanhead.sLC.ushRepetition;
     ismrmrd_acq.idx().segment              = ignore_Segments ? 0 : scanhead.sLC.ushSeg;
     ismrmrd_acq.idx().set                  = scanhead.sLC.ushSet;
-    ismrmrd_acq.idx().slice                = scanhead.sLC.ushSlice;
+    ismrmrd_acq.idx().slice                = getAnatomicalSliceNumber(header, scanhead.sLC.ushSlice);
     ismrmrd_acq.idx().user[0]            = scanhead.sLC.ushIda;
     ismrmrd_acq.idx().user[1]            = scanhead.sLC.ushIdb;
     ismrmrd_acq.idx().user[2]            = scanhead.sLC.ushIdc;
