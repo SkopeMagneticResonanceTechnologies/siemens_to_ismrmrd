@@ -65,14 +65,14 @@
         <p><s>YAPS.iNSet</s>                                                    <d>siemens.YAPS.iNSet</d></p>
 		
 		<!-- B0 compensation --> 
-		<p><s>MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</d></p>
-		<p><s>MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationX.aflAmplitude.0</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationX.aflTimeConstant.0</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</d></p>
 
-		<p><s>MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</d></p>
-		<p><s>MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationY.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationY.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</d></p>
 
-		<p><s>MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</d></p>
-		<p><s>MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationZ.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationZ.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</d></p>
 		
 
         <!-- subjectInformationType --> 
