@@ -11,6 +11,7 @@ namespace SEQSIM
 	void DSP::setVerboseMode(int verbose) {}
 	void DSP::setDataType(DataType type) {}
 	void DSP::setOutputMode(OutputMode mode) {}
+	void DSP::setDSVFileNamePrefix(const char * pDSVFileNamePrefix){}
 	void DSP::setB0CorrCoeff(ECC_Coeff &CoeffX, ECC_Coeff &CoeffY, ECC_Coeff &CoeffZ) {}
 	void DSP::setB0CorrCoeff(	vector<double> &vfCoeffXamp, vector<double> &vfCoeffXtau,
 								vector<double> &vfCoeffYamp, vector<double> &vfCoeffYtau,

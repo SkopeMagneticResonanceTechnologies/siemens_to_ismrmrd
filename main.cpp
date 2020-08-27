@@ -505,6 +505,7 @@ int main(int argc, char *argv[] )
 
 	std::string dsp_file;
 	std::string dsv_folder;
+	std::string dsv_prefix;
 
     std::string schema_file_name;
 
@@ -534,6 +535,7 @@ int main(int argc, char *argv[] )
 			("pMap,m",                  po::value<std::string>(&parammap_file), "<Parameter map XML file>")
 			("dsp,d",					po::value<std::string>(&dsp_file), "<DSP file>")
 			("dsv,s",					po::value<std::string>(&dsv_folder), "<DSV folder>")
+			("prefix,p",				po::value<std::string>(&dsv_prefix), "<DSV prefix>")
             ("pMapStyle,x",             po::value<std::string>(&parammap_xsl), "<Parameter stylesheet XSL file>")
             ("user-map",                po::value<std::string>(&usermap_file), "<Provide a parameter map XML file>")
             ("user-stylesheet",         po::value<std::string>(&usermap_xsl), "<Provide a parameter stylesheet XSL file>")
@@ -558,6 +560,7 @@ int main(int argc, char *argv[] )
             ("pMap,m",                  "<Parameter map XML>")
 			("dsp,d",					"<DSP file>")
 			("dsv,s",					"<DSP folder>")
+			("prefix,p",				"<DSP filename prefix>")
             ("pMapStyle,x",             "<Parameter stylesheet XSL>")
             ("user-map",                "<Provide a parameter map XML file>")
             ("user-stylesheet",         "<Provide a parameter stylesheet XSL file>")
@@ -855,6 +858,8 @@ int main(int argc, char *argv[] )
 	//---------------------------------------------------------------------
 	if (dsp_file.length() != 0 || dsv_folder.length() != 0)
 	{
+		dsp.setDSVFileNamePrefix(dsv_prefix.c_str());
+
 		if (dsp_file.length() != 0) {
 			std::cout << "Using the following DSP file: " << dsp_file << std::endl;
 			dsp.setFileName(dsp_file.c_str());
@@ -867,6 +872,7 @@ int main(int argc, char *argv[] )
 		dsp.setOutputMode(SEQSIM::OutputMode::INTERPOLATED_TO_RX);
 		dsp.setDataType(SEQSIM::DataType::EDDYPHASE);
 		dsp.setVerboseMode(SEQSIM::Verbose::DISPLAY_BASIC);
+		
 
 		SEQSIM::ECC_Coeff sCoeffX;
 		SEQSIM::ECC_Coeff sCoeffY;

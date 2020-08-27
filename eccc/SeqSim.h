@@ -65,6 +65,7 @@ namespace SEQSIM
 									vector<double> &vfCoeffZamp, vector<double> &vfCoeffZtau);
 		void applyPhaseModulation(complex<float> *data, unsigned short numberOfSamples, unsigned int ulScanCounter);
 		void writeToFile();
+		void setDSVFileNamePrefix(const char * pDSVFileNamePrefix);
 
 	};
 
