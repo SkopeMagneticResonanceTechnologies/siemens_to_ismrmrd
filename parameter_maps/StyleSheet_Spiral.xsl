@@ -158,6 +158,9 @@ xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 				<studyDate>
 					<xsl:value-of select="concat($studyYear,$dateSeperator,$studyMonth,$dateSeperator,$studyDay)"/>
 				</studyDate>
+				<bodyPartExamined>
+					<xsl:value-of select="siemens/DICOM/tBodyPartExamined"/>
+				</bodyPartExamined>
             </studyInformation>
 
             <measurementInformation>

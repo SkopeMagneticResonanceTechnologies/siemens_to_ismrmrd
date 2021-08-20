@@ -123,13 +123,16 @@
                 </patientGender>
             </subjectInformation>
 
-            <studyInformation>
+			<studyInformation>
 				<studyInstanceUID>
                     <xsl:value-of select="$studyID" />
                 </studyInstanceUID>
 				<studyDate>
 					<xsl:value-of select="concat($studyYear,$dateSeperator,$studyMonth,$dateSeperator,$studyDay)"/>
 				</studyDate>
+				<bodyPartExamined>
+					<xsl:value-of select="siemens/DICOM/tBodyPartExamined"/>
+				</bodyPartExamined>
             </studyInformation>
             
 
