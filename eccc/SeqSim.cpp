@@ -757,7 +757,7 @@ namespace SEQSIM
 	 void DSP::computeECC(double *adSlewRate, double *afExponential) {
 
 		static const char *ptModule = { "DSP::computeECC(): " };
-	 
+
 		// Allocate memory for FFT result
 		fftw_complex *outGrad = fftw_alloc_complex(m_lConvolutionlLength);
 		fftw_complex *outExp  = fftw_alloc_complex(m_lConvolutionlLength);
@@ -806,7 +806,7 @@ namespace SEQSIM
 	 void DSP::computeECC(){
 
 		 static const char *ptModule = { "DSP::computeECC(): " };
-	
+		 	
 		 // Compute ECC on all axes
 		 if ((m_uiVerbose & DISPLAY_BASIC) == DISPLAY_BASIC) {PRINT("Computing eddy current compensation for X axis...  \n"); mexEvalString("drawnow"); }
 		 computeECC(m_afMULTI_PURPOSEX, m_afExponentialX);
@@ -1061,6 +1061,9 @@ namespace SEQSIM
 			m_afMULTI_PURPOSEY = new double[m_lConvolutionlLength];
 			m_afMULTI_PURPOSEZ = new double[m_lConvolutionlLength];
 		 
+			memset(m_afMULTI_PURPOSEX, 0, m_lConvolutionlLength * sizeof(double));
+			memset(m_afMULTI_PURPOSEY, 0, m_lConvolutionlLength * sizeof(double));
+			memset(m_afMULTI_PURPOSEZ, 0, m_lConvolutionlLength * sizeof(double));													 
 		}
 
 		//---------------------------------------------------------------------
@@ -1074,6 +1077,9 @@ namespace SEQSIM
 		m_afExponentialY = new double[m_lConvolutionlLength];
 		m_afExponentialZ = new double[m_lConvolutionlLength];
 
+		memset(m_afExponentialX, 0, m_lConvolutionlLength * sizeof(double));
+		memset(m_afExponentialY, 0, m_lConvolutionlLength * sizeof(double));
+		memset(m_afExponentialZ, 0, m_lConvolutionlLength * sizeof(double));															  
 	 
 		}
 
@@ -1121,6 +1127,9 @@ namespace SEQSIM
 			m_afMULTI_PURPOSEY = new double[m_lConvolutionlLength];
 			m_afMULTI_PURPOSEZ = new double[m_lConvolutionlLength];
 
+			memset(m_afMULTI_PURPOSEX, 0, m_lConvolutionlLength * sizeof(double));
+			memset(m_afMULTI_PURPOSEY, 0, m_lConvolutionlLength * sizeof(double));
+			memset(m_afMULTI_PURPOSEZ, 0, m_lConvolutionlLength * sizeof(double));															 
 
 			if (m_afMULTI_PURPOSE_INTERPX != NULL) { delete[] m_afMULTI_PURPOSE_INTERPX; m_afMULTI_PURPOSE_INTERPX = NULL; }
 			if (m_afMULTI_PURPOSE_INTERPY != NULL) { delete[] m_afMULTI_PURPOSE_INTERPY; m_afMULTI_PURPOSE_INTERPY = NULL; }
@@ -1130,6 +1139,9 @@ namespace SEQSIM
 			m_afMULTI_PURPOSE_INTERPY = new double[m_lRXSampleLength];
 			m_afMULTI_PURPOSE_INTERPZ = new double[m_lRXSampleLength];
 
+			memset(m_afMULTI_PURPOSE_INTERPX, 0, m_lRXSampleLength * sizeof(double));
+			memset(m_afMULTI_PURPOSE_INTERPY, 0, m_lRXSampleLength * sizeof(double));
+			memset(m_afMULTI_PURPOSE_INTERPZ, 0, m_lRXSampleLength * sizeof(double));																
 			//---------------------------------------------------------------------
 			// Exponentials                                                      
 			//---------------------------------------------------------------------
@@ -1141,6 +1153,9 @@ namespace SEQSIM
 			m_afExponentialY = new double[m_lConvolutionlLength];
 			m_afExponentialZ = new double[m_lConvolutionlLength];
 
+			memset(m_afExponentialX, 0, m_lConvolutionlLength * sizeof(double));
+			memset(m_afExponentialY, 0, m_lConvolutionlLength * sizeof(double));
+			memset(m_afExponentialZ, 0, m_lConvolutionlLength * sizeof(double));														   
 			//---------------------------------------------------------------------
 			// RX Times                                                         
 			//---------------------------------------------------------------------
@@ -1333,7 +1348,7 @@ namespace SEQSIM
 		 while (std::getline(in, line))
 		 {	
 	 
-			// Extract TX events for VD
+			// Extract TX events for VE
 			if (line.find("| Rel.Time |") != std::string::npos) {
 				
 				// Read block info
@@ -1365,6 +1380,35 @@ namespace SEQSIM
 								
 				continue;
 			}
+			// VD
+			else if (line.find("Rel.Time") != std::string::npos) {
+				// Read block info
+				while (std::getline(in, line))
+				{
+
+					if (line.find("#INFO-END") != std::string::npos) {
+						break;
+					}
+
+					int s = line.size()>23 ? 23 : line.size();
+					
+
+					string st = line.substr(0, s - 1);
+
+					// Get position of '/' characters - Separator between TXFlip and Duration
+					vector<size_t> positions;
+
+					size_t pos = st.find("/", 0);
+					if (pos != string::npos) {
+						// Count TX events
+						lTXEvents++;
+					}					
+
+				}
+
+				continue;
+			}
+
 			 
 	 
 	 			 
@@ -1483,49 +1527,89 @@ namespace SEQSIM
 				 			 
 				 
 				// Read block info
+				bool isVE = true;
 				while (std::getline(in, line))
-				{	
-					
+				{
+
 					if (line.find("#INFO-END") != std::string::npos) {
 						break;
 					}
-										
-					// Get positions of all '|' characters
-					vector<size_t> positions; 
 
-					size_t pos = line.find("|", 0);
-					while(pos != string::npos)
-					{
-						positions.push_back(pos);
-						pos = line.find("|",pos+1);
+					if (line.find("| Rel.Time |") != std::string::npos) {
+						isVE = true;
+						continue;
 					}
-					
-					if (positions.size()>3){
+					else if (line.find("Rel.Time") != std::string::npos) {
+						isVE = false;
+						continue;
+					}
+
+					if (isVE) {
+						// Get positions of all '|' characters
+						vector<size_t> positions;
+
+						size_t pos = line.find("|", 0);
+						while (pos != string::npos)
+						{
+							positions.push_back(pos);
+							pos = line.find("|", pos + 1);
+						}
+
+						if (positions.size() > 3) {
+
+
+							string txString = line.substr(positions.at(1) + 1, positions.at(2) - positions.at(1) - 1);
+							if (txString.find(":") != std::string::npos) {
+
+								string flipDurString = txString.substr(txString.find(":") + 1, string::npos);
+
+
+								char * pch;
+								pch = strtok((char *)flipDurString.c_str(), "/");
+
+								// Duration
+								pch = strtok(NULL, "/");
+								long lDur = stod(pch);
+
+
+								// Relative time
+								string relTimeString = line.substr(positions.at(0) + 1, positions.at(1) - positions.at(0) - 1);
+								long lrelTime = stod(relTimeString);
+
+								// Set TX center (assuming it is a symmetric pulse)						
+								m_adTXCenterTimes[m_lCurrentTXNumber] = 1.0e-6*double(lStartTimeEventBlock + lrelTime + lDur / 2);
+								m_lCurrentTXNumber++;
+
+							}
+						}
+					} 
+					else {// is VD
+
+						int s = line.size() > 23 ? 23 : line.size();
 						
-						
-						string txString = line.substr(positions.at(1)+1,positions.at(2)-positions.at(1)-1);
-						if (txString.find(":") != std::string::npos) {
-							
-							string flipDurString = txString.substr(txString.find(":")+1,string::npos);
-													
-							
+						string flipDurString = line.substr(8, 12);
+
+						// Get position of '/' characters - Separator between TXFlip and Duration
+						vector<size_t> positions;
+
+						size_t pos = flipDurString.find("/", 0);
+						if (pos != string::npos) {
 							char * pch;
 							pch = strtok((char *)flipDurString.c_str(), "/");
 
 							// Duration
 							pch = strtok(NULL, "/");
 							long lDur = stod(pch);
-							
-														
-							// Relative time
-							string relTimeString = line.substr(positions.at(0)+1,positions.at(1)-positions.at(0)-1);					
-							long lrelTime = stod(relTimeString);
-							
-							// Set TX center (assuming it is a symmetric pulse)						
-							m_adTXCenterTimes[m_lCurrentTXNumber] = 1.0e-6*double(lStartTimeEventBlock + lrelTime + lDur/2);
-							m_lCurrentTXNumber++;
 
-						}	
+							// Relative time
+							string relTimeString = line.substr(0, 8);
+							long lrelTime = stod(relTimeString);
+
+							// Set TX center (assuming it is a symmetric pulse)						
+							m_adTXCenterTimes[m_lCurrentTXNumber] = 1.0e-6*double(lStartTimeEventBlock + lrelTime + lDur / 2);
+							m_lCurrentTXNumber++;
+							
+						}
 					}
 				}
 								
@@ -1749,7 +1833,6 @@ namespace SEQSIM
 		// Read shapes                                                 
 		//---------------------------------------------------------------------
 		this->readGCShapes();
-			
 
 		//---------------------------------------------------------------------
 		// Calculate integral of gradient                                           
@@ -1804,17 +1887,28 @@ namespace SEQSIM
 				m_afMULTI_PURPOSEX[t] += m_afMULTI_PURPOSEZ[t];
 			}
 
+			for (long t = 0; t < 10; t++) {
+				double a = m_afMULTI_PURPOSEX[t];
+				cout << a;
+			}
+
 			//---------------------------------------------------------------------
 			// Calculate phase by trapezoidal integration
 			//---------------------------------------------------------------------
-			// Do not null phase at center of TX pulse
-			calculateIntegral(m_afMULTI_PURPOSEX, m_afMULTI_PURPOSEX, false);
+			// Do null phase at center of TX pulse
+			calculateIntegral(m_afMULTI_PURPOSEX, m_afMULTI_PURPOSEX, true);
 
 			for (long t = 0; t < m_lConvolutionlLength; t++) {
 				m_afMULTI_PURPOSEX[t] *= 2.0*sfPI*sfGAMMA_1H;
 			}
 						
 		}
+
+		for (long t = 0; t < 10; t++) {
+			double a = m_afMULTI_PURPOSEX[t];
+			cout << a;
+		}
+
 
 		//---------------------------------------------------------------------
 		// Interpolate to RX events                      
