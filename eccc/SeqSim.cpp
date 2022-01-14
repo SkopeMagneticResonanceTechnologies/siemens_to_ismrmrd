@@ -1887,11 +1887,6 @@ namespace SEQSIM
 				m_afMULTI_PURPOSEX[t] += m_afMULTI_PURPOSEZ[t];
 			}
 
-			for (long t = 0; t < 10; t++) {
-				double a = m_afMULTI_PURPOSEX[t];
-				cout << a;
-			}
-
 			//---------------------------------------------------------------------
 			// Calculate phase by trapezoidal integration
 			//---------------------------------------------------------------------
@@ -1903,12 +1898,6 @@ namespace SEQSIM
 			}
 						
 		}
-
-		for (long t = 0; t < 10; t++) {
-			double a = m_afMULTI_PURPOSEX[t];
-			cout << a;
-		}
-
 
 		//---------------------------------------------------------------------
 		// Interpolate to RX events                      
