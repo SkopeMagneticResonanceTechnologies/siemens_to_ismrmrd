@@ -1889,7 +1889,6 @@ namespace SEQSIM
 
 			for (long t = 0; t < 10; t++) {
 				double a = m_afMULTI_PURPOSEX[t];
-				cout << a;
 			}
 
 			//---------------------------------------------------------------------
@@ -1906,7 +1905,6 @@ namespace SEQSIM
 
 		for (long t = 0; t < 10; t++) {
 			double a = m_afMULTI_PURPOSEX[t];
-			cout << a;
 		}
 
 

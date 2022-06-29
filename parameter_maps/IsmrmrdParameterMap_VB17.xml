@@ -10,7 +10,9 @@
         <p><s>MEAS.sKSpace.lImagesPerSlab</s>                       <d>siemens.MEAS.sKSpace.lImagesPerSlab</d></p>
         <p><s>MEAS.sKSpace.dSliceOversamplingForDialog</s>          <d>siemens.MEAS.sKSpace.dSliceOversamplingForDialog</d></p>
         <p><s>MEAS.sKSpace.ucPhasePartialFourier</s>                <d>siemens.MEAS.sKSpace.ucPhasePartialFourier</d></p>
-		<p><s>MEAS.sKSpace.ucMultiSliceMode</s>                     <d>siemens.MEAS.sKSpace.ucMultiSliceMode</d></p>
+		    <p><s>MEAS.sKSpace.ucMultiSliceMode</s>                     <d>siemens.MEAS.sKSpace.ucMultiSliceMode</d></p>
+        <p><s>MEAS.sSliceAcceleration.lMultiBandFactor</s>          <d>siemens.MEAS.sSliceAcceleration.lMultiBandFactor</d></p>
+        <p><s>MEAS.sSliceAcceleration.lFOVShiftFactor</s>           <d>siemens.MEAS.sSliceAcceleration.lFOVShiftFactor</d></p>
         <p><s>MEAS.sKSpace.ucSlicePartialFourier</s>                <d>siemens.MEAS.sKSpace.ucSlicePartialFourier</d></p>
         <p><s>MEAS.sKSpace.lRadialViews</s>                         <d>siemens.MEAS.sKSpace.lRadialViews</d></p>
         <p><s>MEAS.sKSpace.uc2DInterpolation</s>                    <d>siemens.MEAS.sKSpace.uc2DInterpolation</d></p>
@@ -47,7 +49,7 @@
         <p><s>MEAS.ucSequenceType</s>                               <d>siemens.MEAS.ucSequenceType</d></p>
         <p><s>MEAS.sWiPMemBlock.alFree</s>                          <d>siemens.MEAS.sWipMemBlock.alFree</d></p>
         <p><s>MEAS.sWiPMemBlock.adFree</s>                          <d>siemens.MEAS.sWipMemBlock.adFree</d></p>
-		<p><s>MEAS.ucReadOutMode</s>                          		<d>siemens.MEAS.ucReadOutMode</d></p>
+		    <p><s>MEAS.ucReadOutMode</s>                          		  <d>siemens.MEAS.ucReadOutMode</d></p>
 		
 		<!-- B0 compensation --> 
 		<p><s>MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</s>      <d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</d></p>

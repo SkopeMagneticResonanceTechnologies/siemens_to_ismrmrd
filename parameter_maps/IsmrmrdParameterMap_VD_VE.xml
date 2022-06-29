@@ -21,6 +21,8 @@
         <p><s>MEAS.sPat.lAccelFact3D</s>                                        <d>siemens.MEAS.sPat.lAccelFact3D</d></p>
         <p><s>MEAS.sPat.lRefLinesPE</s>                                         <d>siemens.MEAS.sPat.lRefLinesPE</d></p>
         <p><s>MEAS.sPat.lRefLines3D</s>                                         <d>siemens.MEAS.sPat.lRefLines3D</d></p>
+	      <p><s>MEAS.sSliceAcceleration.lMultiBandFactor</s> 			                <d>siemens.MEAS.sSliceAcceleration.lMultiBandFactor</d></p>
+	      <p><s>MEAS.sSliceAcceleration.lFOVShiftFactor</s> 			                <d>siemens.MEAS.sSliceAcceleration.lFOVShiftFactor</d></p>
         <p><s>MEAS.sSliceArray.lSize</s>                                        <d>siemens.MEAS.sSliceArray.lSize</d></p>
         <p><s>MEAS.sRXSPEC.alDwellTime</s>                                      <d>siemens.MEAS.sRXSPEC.alDwellTime</d></p>
         <p><s>MEAS.alTR</s>                                                     <d>siemens.MEAS.alTR</d></p>
@@ -30,6 +32,7 @@
         <p><s>MEAS.sSliceArray.asSlice.0.dReadoutFOV</s>                        <d>siemens.MEAS.sSliceArray.asSlice.s0.dReadoutFOV</d></p>
         <p><s>MEAS.sSliceArray.asSlice.0.dPhaseFOV</s>                          <d>siemens.MEAS.sSliceArray.asSlice.s0.dPhaseFOV</d></p>
         <p><s>MEAS.sSliceArray.asSlice.0.dThickness</s>                         <d>siemens.MEAS.sSliceArray.asSlice.s0.dThickness</d></p>
+        <p><s>MEAS.sGroupArray.asGroup.0.dDistFact</s>                          <d>siemens.MEAS.sGroupArray.asGroup.s0.dDistFact</d></p>
         <p><s>MEAS.sAngio.sFlowArray.lSize</s>                                  <d>siemens.MEAS.sAngio.sFlowArray.lSize</d></p>
         <p><s>MEAS.sAngio.sFlowArray.asElm.0.nVelocity</s>                      <d>siemens.MEAS.sAngio.sFlowArray.asElm.s0.nVelocity</d></p>
         <p><s>YAPS.aflMaxwellCoefficients</s>                                   <d>siemens.YAPS.aflMaxwellCoefficients</d></p>
@@ -53,6 +56,7 @@
         <p><s>IRIS.DERIVED.phaseOversampling</s>                                <d>siemens.IRIS.DERIVED.phaseOversampling</d></p>
         <p><s>IRIS.DERIVED.ImageColumns</s>                                     <d>siemens.IRIS.DERIVED.imageColumns</d></p>
         <p><s>IRIS.DERIVED.ImageLines</s>                                       <d>siemens.IRIS.DERIVED.imageLines</d></p>
+        <p><s>IRIS.DERIVED.sGroupArray.asGroup.0.distance</s>                   <d>siemens.IRIS.DERIVED.sGroupArray.asGroup.s0.distance</d></p>
 
         <p><s>YAPS.iNoOfFourierColumns</s>                                      <d>siemens.YAPS.iNoOfFourierColumns</d></p>
         <p><s>YAPS.iNoOfFourierLines</s>                                        <d>siemens.YAPS.iNoOfFourierLines</d></p>
@@ -64,25 +68,25 @@
         <p><s>YAPS.flReadoutOSFactor</s>                                        <d>siemens.YAPS.flReadoutOSFactor</d></p>
         <p><s>YAPS.iNSet</s>                                                    <d>siemens.YAPS.iNSet</d></p>
 		
-		    <!-- B0 compensation VE--> 
-		    <p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationX.aflAmplitude</s>    <d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationX.aflAmplitude</d></p>
-		    <p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationX.aflTimeConstant</s>	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationX.aflTimeConstant</d></p>
+		<!-- B0 compensation VE--> 
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationX.aflAmplitude</s>    <d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationX.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationX.aflTimeConstant</s>	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationX.aflTimeConstant</d></p>
 
-		    <p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationY.aflAmplitude</s>  	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationY.aflAmplitude</d></p>
-		    <p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationY.aflTimeConstant</s> 	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationY.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationY.aflAmplitude</s>  	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationY.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationY.aflTimeConstant</s> 	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationY.aflTimeConstant</d></p>
 
-		    <p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationZ.aflAmplitude</s>     	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationZ.aflAmplitude</d></p>
-		    <p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationZ.aflTimeConstant</s>  	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationZ.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationZ.aflAmplitude</s>     	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationZ.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.asGPAData.0.sB0CompensationZ.aflTimeConstant</s>  	<d>siemens.MEAS.sGRADSPEC.VE.sB0CompensationZ.aflTimeConstant</d></p>
 		
-		    <!-- B0 compensation VD--> 
-		    <p><s>MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</d></p>
-		    <p><s>MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</d></p>
+		<!-- B0 compensation VD--> 
+		<p><s>MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationX.aflTimeConstant</d></p>
 
-		    <p><s>MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</d></p>
-		    <p><s>MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationY.aflTimeConstant</d></p>
 
-		    <p><s>MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</d></p>
-		    <p><s>MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</d></p>
+		<p><s>MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</s>      			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflAmplitude</d></p>
+		<p><s>MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</s>   			<d>siemens.MEAS.sGRADSPEC.sB0CompensationZ.aflTimeConstant</d></p>
 		
 
         <!-- subjectInformationType --> 
@@ -92,8 +96,7 @@
         <p><s>IRIS.RECOMPOSE.PatientLOID</s>                                    <d>siemens.IRIS.RECOMPOSE.PatientLOID</d></p>
         <p><s>IRIS.RECOMPOSE.PatientBirthDay</s>                                <d>siemens.IRIS.RECOMPOSE.PatientBirthDay</d></p>
         <p><s>DICOM.lPatientSex</s>                                             <d>siemens.DICOM.lPatientSex</d></p>
-        <p><s>DICOM.tBodyPartExamined</s>                                       <d>siemens.DICOM.tBodyPartExamined</d></p>
-      
+
         <!-- studyInformationType --> 
         <p><s>IRIS.RECOMPOSE.StudyLOID</s>                                      <d>siemens.IRIS.RECOMPOSE.StudyLOID</d></p>
         <!-- measurementInformationType --> 
@@ -111,7 +114,7 @@
         <p><s>DICOM.InstitutionName</s>                                         <d>siemens.DICOM.InstitutionName</d></p>
         <!-- experimentalConditionsType --> 
         <p><s>DICOM.lFrequency</s>                                              <d>siemens.DICOM.lFrequency</d></p>
-		    <p><s>YAPS.alLarmorConstant</s>                             			      <d>siemens.YAPS.alLarmorConstant</d></p>
+		<p><s>YAPS.alLarmorConstant</s>                             			<d>siemens.YAPS.alLarmorConstant</d></p>
 		
         <!-- dicomParametersType --> 
         <p><s>YAPS.tFrameOfReference</s>                                        <d>siemens.YAPS.tFrameOfReference</d></p>
@@ -130,14 +133,14 @@
         <p><s>YAPS.alRegridDelaySamplesTime</s>                                 <d>siemens.YAPS.alRegridDelaySamplesTime</d></p>
         <p><s>YAPS.aflRegridADCDuration</s>                                     <d>siemens.YAPS.aflRegridADCDuration</d></p>
         <p><s>YAPS.alRegridDestSamples</s>                                      <d>siemens.YAPS.alRegridDestSamples</d></p>
-		    <p><s>YAPS.GradientEchoTrainLength</s>                                  <d>siemens.YAPS.GradientEchoTrainLength</d></p>
+		<p><s>YAPS.GradientEchoTrainLength</s>                                  <d>siemens.YAPS.GradientEchoTrainLength</d></p>
 
         <p><s>YAPS.lFirstFourierLine</s>                                        <d>siemens.YAPS.lFirstFourierLine</d></p>
         <p><s>YAPS.lFirstFourierPartition</s>                                   <d>siemens.YAPS.lFirstFourierPartition</d></p>
 
         <!-- diffusion weighted imaging parameter -->
         <p><s>MEAS.sDiffusion.lDiffDirections</s>                               <d>siemens.MEAS.sDiffusion.lDiffDirections</d></p>
-		    <p><s>MEAS.sDiffusion.lDiffWeightings</s>                               <d>siemens.MEAS.sDiffusion.lDiffWeightings</d></p>
+		<p><s>MEAS.sDiffusion.lDiffWeightings</s>                               <d>siemens.MEAS.sDiffusion.lDiffWeightings</d></p>
         <p><s>MEAS.sDiffusion.alBValue</s>                                      <d>siemens.MEAS.sDiffusion.alBValue</d></p>
 
         <!-- user defined parameter -->

@@ -93,7 +93,7 @@ std::vector<MeasurementHeaderBuffer> readMeasurementHeaderBuffers(std::ifstream 
 std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_content, uint32_t num_buffers,
                           std::vector<MeasurementHeaderBuffer> &buffers, std::vector<std::string> &wip_double,
                           Trajectory &trajectory, long &dwell_time_0, long &max_channels, long &radial_views,
-                          std::string &baseLineString, std::string &protocol_name, double &dReadoutOversampling);
+                          std::string &baseLineString, std::string &protocol_name, double &dReadoutOversampling, long &lMultiBandFactor);
 
 std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, std::string &schema_file_name_content,
                      const std::string xml_config);
@@ -107,7 +107,7 @@ ISMRMRD::Acquisition
         getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, double dReadoutOversampling, long max_channels,
                        bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB, bool &ignore_Segments, ISMRMRD::NDArray<float> &traj,
                        const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels,
-					   ISMRMRD::IsmrmrdHeader header);
+					   ISMRMRD::IsmrmrdHeader header, long lMultiBandFactor);
 
 bool isImagingScan(const sScanHeader &scanhead);
 
@@ -784,10 +784,11 @@ int main(int argc, char *argv[] )
     long max_channels;
     long radial_views;
 	double dReadoutOversampling;
+	long lMultiBandFactor;
     std::string baseLineString;
     std::string protocol_name;
     std::string xml_config = readXmlConfig(debug_xml, parammap_file_content, num_buffers, buffers, wip_double, trajectory, dwell_time_0,
-                                           max_channels, radial_views, baseLineString, protocol_name, dReadoutOversampling);
+                                           max_channels, radial_views, baseLineString, protocol_name, dReadoutOversampling, lMultiBandFactor);
 
     // whether this scan is a adjustment scan
     bool isAdjustCoilSens = false;
@@ -1119,7 +1120,7 @@ int main(int argc, char *argv[] )
 
 			// Append dataset
 			ismrmrd_dataset->appendAcquisition(getAcquisition(flash_pat_ref_scan, trajectory, dwell_time_0, dReadoutOversampling, max_channels, isAdjustCoilSens,
-				isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header));
+				isAdjQuietCoilSens, isVB, ignore_Segments, traj, scanhead, channels, header, lMultiBandFactor));
 			
 			
 		}//End of the while loop
@@ -1367,12 +1368,11 @@ uint16_t getAnatomicalSliceNumber(ISMRMRD::IsmrmrdHeader header, uint16_t uiAcqS
 
 
 
-
 ISMRMRD::Acquisition
 getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell_time_0, double dReadoutOversampling, long max_channels,
                bool isAdjustCoilSens, bool isAdjQuietCoilSens, bool isVB,  bool &ignore_Segments, ISMRMRD::NDArray<float> &traj,
                const sScanHeader &scanhead, const std::vector<ChannelHeaderAndData> &channels,
-			   ISMRMRD::IsmrmrdHeader header) {
+			   ISMRMRD::IsmrmrdHeader header, long lMultiBandFactor) {
     ISMRMRD::Acquisition ismrmrd_acq;
     // The number of samples, channels and trajectory dimensions is set below
 
@@ -1492,6 +1492,12 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
         if ((scanhead.aulEvalInfoMask[0] & (1ULL << 22)))   ismrmrd_acq.setFlag(
                     ISMRMRD::ISMRMRD_ACQ_IS_PARALLEL_CALIBRATION);
     }
+
+	// Reference scans as used in multi-band sequences
+	if ((scanhead.aulEvalInfoMask[1] & (1ULL << 6))) {
+		ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_USER6);
+	}
+
 
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 24)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_IS_REVERSE);
     if ((scanhead.aulEvalInfoMask[0] & (1ULL << 11)))   ismrmrd_acq.setFlag(ISMRMRD::ISMRMRD_ACQ_LAST_IN_MEASUREMENT);
@@ -1692,7 +1698,21 @@ getAcquisition(bool flash_pat_ref_scan, const Trajectory &trajectory, long dwell
 
 		complex_float_t* data = (complex_float_t *)&ismrmrd_acq.getDataPtr()[c*ismrmrd_acq.number_of_samples()];
 
-
+		// Undo phase modulation done by scanner for multi-band acquisitions (MB=2 supported only so far)
+		if (lMultiBandFactor > 1) {
+			if (header.encoding.at(0).parallelImaging.is_present() && header.encoding.at(0).parallelImaging.get().multiBand.is_present()) {
+				float spacing = header.encoding.at(0).parallelImaging.get().multiBand.get().spacing;
+				float phi = (float)M_PI / (spacing * 1e-3) * sliceShift_prs[2] * (scanhead.sLC.ushSeg==0);
+				
+				for (int s = 0; s < ismrmrd_acq.number_of_samples(); s++) {				
+					data[s] *= std::polar(1.0f, phi);
+				}
+			}
+			else {
+				std::cout << "header.encoding.parallelImaging.multiBand.spacing has not been defined by style sheet. Phase modulations were not undone." << std::endl;
+			}	   
+		}
+			   
 		// Undo FoV shifts
 		if (bUndoFoVShifts) {
 			if (ismrmrd_acq.isFlagSet(ISMRMRD::ISMRMRD_ACQ_IS_REVERSE)) {
@@ -2115,7 +2135,7 @@ std::string parseXML(bool debug_xml, const std::string &parammap_xsl_content, st
 std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_content, uint32_t num_buffers,
                           std::vector<MeasurementHeaderBuffer> &buffers, std::vector<std::string> &wip_double,
                           Trajectory &trajectory, long &dwell_time_0, long &max_channels, long &radial_views,
-                          std::string &baseLineString, std::string &protocol_name, double &dReadoutOversampling) {
+                          std::string &baseLineString, std::string &protocol_name, double &dReadoutOversampling, long &lMultiBandFactor) {
     dwell_time_0= 0;
     max_channels= 0;
     radial_views= 0;
@@ -2128,6 +2148,7 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
     long lPartitions = 0;
     long iNoOfFourierPartitions = 0;
     std::string seqString;
+	lMultiBandFactor = 1;
     for (unsigned int b = 0; b < num_buffers; b++)
     {
         if (buffers[b].name.compare("Meas") == 0)
@@ -2161,6 +2182,25 @@ std::string readXmlConfig(bool debug_xml, const std::string &parammap_file_conte
 				{
 					dReadoutOversampling = std::atof(temp[0].c_str());
 				}
+			}
+
+			//Get some parameters - multi-band
+			{
+				const XProtocol::XNode* n2 = apply_visitor(XProtocol::getChildNodeByName("MEAS.sSliceAcceleration.lMultiBandFactor"), n);
+				std::vector<std::string> temp;
+				if (n2)
+				{
+					temp = apply_visitor(XProtocol::getStringValueArray(), *n2);
+				}
+				else
+				{
+					std::cout << "Search path: MEAS.sSliceAcceleration.lMultiBandFactor not found." << std::endl;
+				}
+				if (temp.size() > 0)
+				{
+					lMultiBandFactor = std::atof(temp[0].c_str());
+				}
+
 			}
 
             //Get some parameters - wip long
