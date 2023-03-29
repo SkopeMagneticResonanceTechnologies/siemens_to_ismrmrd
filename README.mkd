@@ -59,7 +59,7 @@ $ sudo make install
 ```
 #### Set the ISMRMRD environmental variable:
 ```sh
-$ echo "export ISMRMRD_HOME=/usr/local/ismrmrd" >> $HOME/.bash_profile
+$ echo "export ISMRMRD_HOME=$HOME/Documents/ismrmrd" >> $HOME/.bash_profile
 $ source $HOME/.bash_profile
 ```
 ### Installing siemens_to_ismrmrd:
