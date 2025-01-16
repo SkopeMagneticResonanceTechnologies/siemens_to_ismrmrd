@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "siemens-to-ismrmrd",
+  "version": "0.1",
+  "dependencies": [
+    "hdf5",
+    "pugixml",
+    "ismrmrd",
+    "fftw3",
+    "libxml2",
+    "libxslt",
+    "boost-test",
+    "boost-random",
+    "boost-program-options",
+    "boost-uuid",
+    "boost-filesystem",
+    "boost-thread",
+    "boost-timer",
+    "boost-spirit",
+    "boost-locale",
+    "boost-foreach"
+  ],
+  "builtin-baseline": "fba75d09065fcc76a25dcf386b1d00d33f5175af"
+}

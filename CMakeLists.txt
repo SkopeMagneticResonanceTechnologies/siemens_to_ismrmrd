@@ -3,9 +3,6 @@ cmake_minimum_required(VERSION 3.0)
 project(SIEMENS-TO-ISMRMRD)
 
 # --- Provide good defaults for searching for packages (i.e. ismrmrd)
-if(EXISTS $ENV{CMAKE_PREFIX_PATH})
-  list(APPEND CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH})
-endif()
 if(EXISTS $ENV{ISMRMRD_HOME})
   list(APPEND CMAKE_PREFIX_PATH $ENV{ISMRMRD_HOME})
 endif()
@@ -135,8 +132,15 @@ target_link_libraries(siemens_to_ismrmrd ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIE
 target_link_libraries(siemens_to_ismrmrd
                         ISMRMRD::ISMRMRD
                         ${Boost_LIBRARIES} )
-
-install(TARGETS siemens_to_ismrmrd DESTINATION bin)
+if (WIN32)
+  install(TARGETS siemens_to_ismrmrd DESTINATION bin COMPONENT main
+          RUNTIME_DEPENDENCIES
+          PRE_EXCLUDE_REGEXES "api-ms-" "ex-ms"
+          POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
+          DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}")
+else()
+    install(TARGETS siemens_to_ismrmrd DESTINATION bin COMPONENT main)
+endif()
 
 # Create package
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
