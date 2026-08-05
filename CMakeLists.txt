@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 
 project(SIEMENS-TO-ISMRMRD)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
 # --- Provide good defaults for searching for packages (i.e. ismrmrd)
 if(EXISTS $ENV{ISMRMRD_HOME})
   list(APPEND CMAKE_PREFIX_PATH $ENV{ISMRMRD_HOME})
@@ -38,6 +41,7 @@ endif()
 if (WIN32)
     ADD_DEFINITIONS(-DWIN32 -D_WIN32 -D_WINDOWS)
     # ADD_DEFINITIONS(-DUNICODE -D_UNICODE)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
     set (CMAKE_EXE_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
@@ -45,8 +49,6 @@ if (WIN32)
     set (CMAKE_STATIC_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
     set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "/debug /INCREMENTAL:NO")
     add_definitions(-D__BUILD_CONVERTER_TINYXML__)
-else()
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11")
 endif()
 
 # Added for static linking!!!

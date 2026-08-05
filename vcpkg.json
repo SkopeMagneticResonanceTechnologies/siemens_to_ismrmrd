@@ -5,7 +5,10 @@
   "dependencies": [
     "hdf5",
     "pugixml",
-    "ismrmrd",
+    {
+        "name": "ismrmrd",
+        "features": ["hdf5"]
+    },
     "fftw3",
     "libxml2",
     "libxslt",
